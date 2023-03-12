@@ -1,0 +1,47 @@
+cabal-version: 2.4
+name: i
+version: 0.1
+license: Apache-2.0
+license-file: LICENSE
+extra-source-files: README.md CHANGELOG.md
+author: Renzo Carbonara
+maintainer: renλren.zone
+copyright: Copyright (c) Renzo Carbonara 2023
+category: Intervals
+build-type: Simple
+synopsis: Haskell interval types.
+description: Haskell interval types.
+homepage: https://github.com/k0001/hs-i
+bug-reports: https://github.com/k0001/hs-i/issues
+tested-with: GHC ==9.2.5, GHC ==9.4.3
+
+common basic
+  default-language: GHC2021
+  ghc-options: -O2 -Wall -Werror=incomplete-patterns
+  build-depends: base ==4.*
+  default-extensions:
+    DataKinds
+    DefaultSignatures
+    DerivingStrategies
+    GeneralizedNewtypeDeriving
+    RoleAnnotations
+    TypeFamilies
+
+library
+  import: basic
+  hs-source-dirs: hs
+  build-depends: constraints
+  exposed-modules: I
+  other-modules:
+    I.Internal
+    I.Word8
+    I.Word16
+    I.Word32
+    I.Word64
+
+test-suite test
+  import: basic
+  type: exitcode-stdio-1.0
+  hs-source-dirs: .
+  main-is: test.hs
+  build-depends: i
