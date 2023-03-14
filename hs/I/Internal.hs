@@ -204,7 +204,7 @@ class (Zero x l r) => Negate (x :: Type) (l :: L x) (r :: R x) where
   --
   -- @
   -- forall (a :: 'I' x l r).
-  --   /such that there is a/ 'Negate' x l r /instance.
+  --   /such that there is a/ 'Negate' x l r /instance/.
   --     'Just' ('negate' a)  = 'negate'' a
   -- @
   negate :: I x l r -> I x l r
@@ -309,6 +309,9 @@ class
 
 -- | Proof that @'I' x l r@ contains a value of type @x@ whose
 -- type-level representation @t :: 'T' x@ satisfies a @'Known' x t l r@.
+
+-- TODO: The 'with' method belongs in the 'Inhabited' class, but I can't
+-- get it to type-check, so it's here in this separate 'With' class.
 class (Inhabited x l r) => With (x :: Type) (l :: L x) (r :: R x) where
   -- | Bring to scope the type-level representation of @x@ as @t :: 'T' x@,
   -- together with the constraints that prove that @t@ is 'Known' to be in the
@@ -316,9 +319,9 @@ class (Inhabited x l r) => With (x :: Type) (l :: L x) (r :: R x) where
   --
   -- [Identity law]
   --
-  -- @
-  -- x  ==  'with' x (\\(_ :: 'Proxy' t) -> 'known' \@_ \@t)
-  -- @
+  --     @
+  --     x  ==  'with' x (\\(_ :: 'Proxy' t) -> 'known' \@_ \@t)
+  --     @
   with :: I x l r -> (forall (t :: T x). Known x t l r => Proxy t -> b) -> b
 
 -- | Wrap the given @x@ in the interval @'I' x ('MinL' x) ('MaxR' x)@.
@@ -333,10 +336,10 @@ class (Inhabited x l r) => With (x :: Type) (l :: L x) (r :: R x) where
 --
 -- [Identity law]
 --
--- @
--- 'wrap' . 'unwrap' == 'id'
--- 'unwrap' . 'wrap' == 'id'
--- @
+--     @
+--     'wrap' . 'unwrap' == 'id'
+--     'unwrap' . 'wrap' == 'id'
+--     @
 wrap :: Inhabited x (MinL x) (MaxR x) => x -> I x (MinL x) (MaxR x)
 wrap = coerce
 {-# INLINE wrap #-}
@@ -345,10 +348,10 @@ wrap = coerce
 --
 -- [Identity law]
 --
--- @
--- 'wrap' . 'unwrap' == 'id'
--- 'unwrap' . 'wrap' == 'id'
--- @
+--     @
+--     'wrap' . 'unwrap' == 'id'
+--     'unwrap' . 'wrap' == 'id'
+--     @
 --
 -- It is implied that the interval is 'Inhabited', but there's no need
 -- to mention the constraint here since otherwise it wouldn't have been
