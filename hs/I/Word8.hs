@@ -10,18 +10,27 @@ import Control.Monad
 import Data.Constraint
 import Data.Maybe
 import Data.Proxy
-import Data.Type.Ord
 import Data.Word
+import Data.Type.Ord
+import Foreign.C.Types
 import GHC.TypeLits qualified as Lits
 import GHC.TypeNats (KnownNat)
+import KindInteger (type (/=))
 import Prelude hiding (min, max, div)
 
 import I.Internal
 
 --------------------------------------------------------------------------------
 
-type instance MinT Word8 = 0
-type instance MaxT Word8 = 255
+-- | This is so that GHC doesn't complain about the unused modules,
+-- which we import here so that `genmodules.sh` doesn't have to add it
+-- to the generated modules.
+_ignore :: (CSize, Word)
+_ignore = (0, 0)
+
+--------------------------------------------------------------------------------
+
+
 type instance MinL Word8 = MinT Word8
 type instance MaxR Word8 = MaxT Word8
 
@@ -38,8 +47,8 @@ instance forall l r.
   type MaxBoundI Word8 l r = r
   from x = do
     Lits.SomeNat (_ :: Proxy x) <- Lits.someNatVal (toInteger x)
-    Dict <- leNat @l @x
-    Dict <- leNat @x @r
+    Dict <- leNatural @l @x
+    Dict <- leNatural @x @r
     pure (UnsafeI x)
 
 instance
@@ -57,36 +66,34 @@ instance forall t l r.
 instance forall l r. (Inhabited Word8 l r) => With Word8 l r where
   with x g = fromMaybe (error "I.with: impossible") $ do
     Lits.SomeNat (pt :: Proxy t) <- Lits.someNatVal (toInteger (unwrap x))
-    Dict <- leNat @l @t
-    Dict <- leNat @t @r
+    Dict <- leNatural @l @t
+    Dict <- leNatural @t @r
     pure (g pt)
 
 instance
   ( Inhabited Word8 l r, PredCtx Word8 l r
   ) => Pred Word8 l r where
-  type PredCtx Word8 l r = (l /~ r)
+  type PredCtx Word8 l r = l /= r
   pred i = UnsafeI (unwrap i - 1) <$ guard (min < i)
 
 instance
   ( Inhabited Word8 l r, SuccCtx Word8 l r
   ) => Succ Word8 l r where
-  type SuccCtx Word8 l r = (l /~ r)
+  type SuccCtx Word8 l r = l /= r
   succ i = UnsafeI (unwrap i + 1) <$ guard (i < max)
 
 instance
   ( Known Word8 t l r, Pred Word8 l r, KnownPredCtx Word8 t l r
   ) => KnownPred Word8 t l r where
-  type KnownPredCtx Word8 t l r = t /~ l
+  type KnownPredCtx Word8 t l r = t /= l
   type Pred' Word8 t l r = t Lits.- 1
 instance
   ( Known Word8 t l r, Succ Word8 l r, KnownSuccCtx Word8 t l r
   ) => KnownSucc Word8 t l r where
-  type KnownSuccCtx Word8 t l r = t /~ r
+  type KnownSuccCtx Word8 t l r = t /= r
   type Succ' Word8 t l r = t Lits.+ 1
 
 instance (Inhabited Word8 l r, PlusCtx Word8 l r) => Plus Word8 l r
-instance (Plus Word8 l r, Zero Word8 l r, PlusInvCtx Word8 l r)
-  => PlusInv Word8 l r
 instance (Inhabited Word8 l r, MultCtx Word8 l r) => Mult Word8 l r
 instance (Inhabited Word8 l r, MinusCtx Word8 l r) => Minus Word8 l r
 instance (Inhabited Word8 l r, ZeroCtx Word8 l r) => Zero Word8 l r where

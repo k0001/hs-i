@@ -1,12 +1,10 @@
+{-# LANGUAGE CPP #-}
 {-# LANGUAGE AllowAmbiguousTypes #-}
-{-# LANGUAGE DataKinds #-}
-{-# LANGUAGE DerivingStrategies #-}
-{-# LANGUAGE DefaultSignatures #-}
-{-# LANGUAGE GeneralizedNewtypeDeriving #-}
-{-# LANGUAGE RoleAnnotations #-}
-{-# LANGUAGE TypeFamilies #-}
 {-# LANGUAGE UndecidableInstances #-}
 {-# LANGUAGE UndecidableSuperClasses #-}
+
+#include <MachDeps.h>
+#include <HsBaseConfig.h>
 
 module I.Internal where
 
@@ -15,12 +13,36 @@ import Data.Bits
 import Data.Coerce
 import Data.Constraint
 import Data.Kind
+import Data.Int
 import Data.Maybe
 import Data.Proxy
 import Data.Word
-import GHC.TypeLits qualified as Lits
-import Prelude hiding (min, max, div)
+import Data.Type.Equality
+import Foreign.C.Types
+import GHC.TypeLits qualified as L
+import KindInteger qualified as K
+import Prelude hiding (min, max, div, pred, succ)
 import Unsafe.Coerce (unsafeCoerce)
+
+--------------------------------------------------------------------------------
+
+leNatural
+  :: forall a b
+  .  (L.KnownNat a, L.KnownNat b)
+  => Maybe (Dict (a L.<= b))
+leNatural = case L.cmpNat (Proxy @a) (Proxy @b) of
+  L.EQI -> Just $ unsafeCoerce (Dict @())
+  L.LTI -> Just $ unsafeCoerce (Dict @())
+  L.GTI -> Nothing
+
+leInteger
+  :: forall (a :: K.Integer) (b :: K.Integer)
+  .  (K.KnownInteger a, K.KnownInteger b)
+  => Maybe (Dict (a L.<= b))
+leInteger = case K.cmpInteger (Proxy @a) (Proxy @b) of
+  L.EQI -> Just $ unsafeCoerce (Dict @())
+  L.LTI -> Just $ unsafeCoerce (Dict @())
+  L.GTI -> Nothing
 
 --------------------------------------------------------------------------------
 
@@ -247,7 +269,7 @@ class
 -- __NB__: When defining 'Known' instances, instead of mentioning any
 -- necessary constraints in the instance context, mention them them in
 -- 'KnownCtx'. By doing so, when an instance of @'Known' x l r@ is
--- satisfied, @'KnownConstraint' x l r@ is satisfied as well.
+-- satisfied, @'KnownCtx' x l r@ is satisfied as well.
 class
   ( Inhabited x l r, KnownCtx x t l r
   ) => Known (x :: Type) (t :: T x) (l :: L x) (r :: R x) where
@@ -379,9 +401,10 @@ max = known @_ @(MaxBoundI x l r)
 
 --------------------------------------------------------------------------------
 
-{- TODO: I have no idea why, but if I move the T, L or R type instance
-   definitions to the I.Naturals module, it does not compile.
-   It leads to errors like the following all over the module.
+{-
+TODO: I have no idea why, but if I move the T, L or R type instance
+definitions to the I.Naturals module, it does not compile.
+It leads to errors like the following all over the module.
 
          hs/I/Naturals.hs:108:41: error:
              • Expected kind ‘Natural’, but ‘r’ has kind ‘R Word8’
@@ -390,45 +413,202 @@ max = known @_ @(MaxBoundI x l r)
                In the type instance declaration for ‘OneCtx’
              |
          108 |   type OneCtx Word8 l r = (l <= 1, 1 <= r)
+
+
+On the contrary, it doesn't seem necessary to define define MinT and MaxT
+instances here. However, it's convenient, so we do it.
+It's easier to only deal with the CPP stuff here, too.
 -}
-type instance T Word8 = Lits.Nat
-type instance L Word8 = Lits.Nat
-type instance R Word8 = Lits.Nat
 
-type instance T Word16 = Lits.Nat
-type instance L Word16 = Lits.Nat
-type instance R Word16 = Lits.Nat
+type instance T Word8 = L.Natural
+type instance L Word8 = L.Natural
+type instance R Word8 = L.Natural
+type instance MinT Word8 = 0
+type instance MaxT Word8 = 255
 
-type instance T Word32 = Lits.Nat
-type instance L Word32 = Lits.Nat
-type instance R Word32 = Lits.Nat
+type instance T Word16 = L.Natural
+type instance L Word16 = L.Natural
+type instance R Word16 = L.Natural
+type instance MinT Word16 = 0
+type instance MaxT Word16 = 65535
 
-type instance T Word64 = Lits.Nat
-type instance L Word64 = Lits.Nat
-type instance R Word64 = Lits.Nat
+type instance T Word32 = L.Natural
+type instance L Word32 = L.Natural
+type instance R Word32 = L.Natural
+type instance MinT Word32 = 0
+type instance MaxT Word32 = 4294967295
 
---------------------------------------------------------------------------------
+type instance T Word64 = L.Natural
+type instance L Word64 = L.Natural
+type instance R Word64 = L.Natural
+type instance MinT Word64 = 0
+type instance MaxT Word64 = 18446744073709551615
 
-leNat :: forall l r
-      .  (Lits.KnownNat l, Lits.KnownNat r)
-      => Maybe (Dict (l Lits.<= r))
-leNat = case Lits.cmpNat (Proxy @l) (Proxy @r) of
-  Lits.EQI -> Just $ unsafeCoerce (Dict @())
-  Lits.LTI -> Just $ unsafeCoerce (Dict @())
-  Lits.GTI -> Nothing
+type instance T Word = L.Natural
+type instance L Word = L.Natural
+type instance R Word = L.Natural
+type instance MinT Word = 0
+type instance MaxT Word = (2 L.^ WORD_SIZE_IN_BITS) L.- 1
 
+type instance T Int8 = K.Integer
+type instance L Int8 = K.Integer
+type instance R Int8 = K.Integer
+type instance MinT Int8 = K.N 128
+type instance MaxT Int8 = K.P 127
 
--- type family Disable (c :: Constraint) :: k where
---   Disable c = Lits.TypeError
---     ( 'Lits.Text "‘" 'Lits.:<>: 'Lits.ShowType c 'Lits.:<>:
---       'Lits.Text "’ instance explicitly disabled." )
+type instance T Int16 = K.Integer
+type instance L Int16 = K.Integer
+type instance R Int16 = K.Integer
+type instance MinT Int16 = K.N 32768
+type instance MaxT Int16 = K.P 32767
 
-type (/~) :: ka -> kb -> Constraint
-type family a /~ b :: Constraint where
-  a /~ a = Lits.TypeError
-    ('Lits.Text "Expected ‘" 'Lits.:<>:
-     'Lits.ShowType a 'Lits.:<>:
-     'Lits.Text " /~ " 'Lits.:<>:
-     'Lits.ShowType a 'Lits.:<>:
-     'Lits.Text "’, got otherwise.")
-  _ /~ _ = ()
+type instance T Int32 = K.Integer
+type instance L Int32 = K.Integer
+type instance R Int32 = K.Integer
+type instance MinT Int32 = K.N 2147483648
+type instance MaxT Int32 = K.P 2147483647
+
+type instance T Int64 = K.Integer
+type instance L Int64 = K.Integer
+type instance R Int64 = K.Integer
+type instance MinT Int64 = K.N 9223372036854775808
+type instance MaxT Int64 = K.P 9223372036854775807
+
+type instance T Int = K.Integer
+type instance L Int = K.Integer
+type instance R Int = K.Integer
+type instance MinT Int = K.N (L.Div (2 L.^ WORD_SIZE_IN_BITS) 2)
+type instance MaxT Int = K.P (L.Div (2 L.^ WORD_SIZE_IN_BITS) 2 L.- 1)
+
+type instance T CChar = T HTYPE_CHAR
+type instance L CChar = L HTYPE_CHAR
+type instance R CChar = R HTYPE_CHAR
+type instance MinT CChar = MinT HTYPE_CHAR
+type instance MaxT CChar = MaxT HTYPE_CHAR
+
+type instance T CSize = T HTYPE_SIZE_T
+type instance L CSize = L HTYPE_SIZE_T
+type instance R CSize = R HTYPE_SIZE_T
+type instance MinT CSize = MinT HTYPE_SIZE_T
+type instance MaxT CSize = MaxT HTYPE_SIZE_T
+
+type instance T CClock = T HTYPE_CLOCK_T
+type instance L CClock = L HTYPE_CLOCK_T
+type instance R CClock = R HTYPE_CLOCK_T
+type instance MinT CClock = MinT HTYPE_CLOCK_T
+type instance MaxT CClock = MaxT HTYPE_CLOCK_T
+
+type instance T CInt = T HTYPE_INT
+type instance L CInt = L HTYPE_INT
+type instance R CInt = R HTYPE_INT
+type instance MinT CInt = MinT HTYPE_INT
+type instance MaxT CInt = MaxT HTYPE_INT
+
+type instance T CIntMax = T HTYPE_INTMAX_T
+type instance L CIntMax = L HTYPE_INTMAX_T
+type instance R CIntMax = R HTYPE_INTMAX_T
+type instance MinT CIntMax = MinT HTYPE_INTMAX_T
+type instance MaxT CIntMax = MaxT HTYPE_INTMAX_T
+
+type instance T CIntPtr = T HTYPE_INTPTR_T
+type instance L CIntPtr = L HTYPE_INTPTR_T
+type instance R CIntPtr = R HTYPE_INTPTR_T
+type instance MinT CIntPtr = MinT HTYPE_INTPTR_T
+type instance MaxT CIntPtr = MaxT HTYPE_INTPTR_T
+
+type instance T CLLong = T HTYPE_LONG_LONG
+type instance L CLLong = L HTYPE_LONG_LONG
+type instance R CLLong = R HTYPE_LONG_LONG
+type instance MinT CLLong = MinT HTYPE_LONG_LONG
+type instance MaxT CLLong = MaxT HTYPE_LONG_LONG
+
+type instance T CLong = T HTYPE_LONG
+type instance L CLong = L HTYPE_LONG
+type instance R CLong = R HTYPE_LONG
+type instance MinT CLong = MinT HTYPE_LONG
+type instance MaxT CLong = MaxT HTYPE_LONG
+
+type instance T CPtrdiff = T HTYPE_PTRDIFF_T
+type instance L CPtrdiff = L HTYPE_PTRDIFF_T
+type instance R CPtrdiff = R HTYPE_PTRDIFF_T
+type instance MinT CPtrdiff = MinT HTYPE_PTRDIFF_T
+type instance MaxT CPtrdiff = MaxT HTYPE_PTRDIFF_T
+
+type instance T CSChar = T HTYPE_SIGNED_CHAR
+type instance L CSChar = L HTYPE_SIGNED_CHAR
+type instance R CSChar = R HTYPE_SIGNED_CHAR
+type instance MinT CSChar = MinT HTYPE_SIGNED_CHAR
+type instance MaxT CSChar = MaxT HTYPE_SIGNED_CHAR
+
+type instance T CSUSeconds = T HTYPE_SUSECONDS_T
+type instance L CSUSeconds = L HTYPE_SUSECONDS_T
+type instance R CSUSeconds = R HTYPE_SUSECONDS_T
+type instance MinT CSUSeconds = MinT HTYPE_SUSECONDS_T
+type instance MaxT CSUSeconds = MaxT HTYPE_SUSECONDS_T
+
+type instance T CShort = T HTYPE_SHORT
+type instance L CShort = L HTYPE_SHORT
+type instance R CShort = R HTYPE_SHORT
+type instance MinT CShort = MinT HTYPE_SHORT
+type instance MaxT CShort = MaxT HTYPE_SHORT
+
+type instance T CTime = T HTYPE_TIME_T
+type instance L CTime = L HTYPE_TIME_T
+type instance R CTime = R HTYPE_TIME_T
+type instance MinT CTime = MinT HTYPE_TIME_T
+type instance MaxT CTime = MaxT HTYPE_TIME_T
+
+type instance T CUChar = T HTYPE_UNSIGNED_CHAR
+type instance L CUChar = L HTYPE_UNSIGNED_CHAR
+type instance R CUChar = R HTYPE_UNSIGNED_CHAR
+type instance MinT CUChar = MinT HTYPE_UNSIGNED_CHAR
+type instance MaxT CUChar = MaxT HTYPE_UNSIGNED_CHAR
+
+type instance T CUInt = T HTYPE_UNSIGNED_INT
+type instance L CUInt = L HTYPE_UNSIGNED_INT
+type instance R CUInt = R HTYPE_UNSIGNED_INT
+type instance MinT CUInt = MinT HTYPE_UNSIGNED_INT
+type instance MaxT CUInt = MaxT HTYPE_UNSIGNED_INT
+
+type instance T CUIntMax = T HTYPE_UINTMAX_T
+type instance L CUIntMax = L HTYPE_UINTMAX_T
+type instance R CUIntMax = R HTYPE_UINTMAX_T
+type instance MinT CUIntMax = MinT HTYPE_UINTMAX_T
+type instance MaxT CUIntMax = MaxT HTYPE_UINTMAX_T
+
+type instance T CUIntPtr = T HTYPE_UINTPTR_T
+type instance L CUIntPtr = L HTYPE_UINTPTR_T
+type instance R CUIntPtr = R HTYPE_UINTPTR_T
+type instance MinT CUIntPtr = MinT HTYPE_UINTPTR_T
+type instance MaxT CUIntPtr = MaxT HTYPE_UINTPTR_T
+
+type instance T CULLong = T HTYPE_UNSIGNED_LONG_LONG
+type instance L CULLong = L HTYPE_UNSIGNED_LONG_LONG
+type instance R CULLong = R HTYPE_UNSIGNED_LONG_LONG
+type instance MinT CULLong = MinT HTYPE_UNSIGNED_LONG_LONG
+type instance MaxT CULLong = MaxT HTYPE_UNSIGNED_LONG_LONG
+
+type instance T CULong = T HTYPE_UNSIGNED_LONG
+type instance L CULong = L HTYPE_UNSIGNED_LONG
+type instance R CULong = R HTYPE_UNSIGNED_LONG
+type instance MinT CULong = MinT HTYPE_UNSIGNED_LONG
+type instance MaxT CULong = MaxT HTYPE_UNSIGNED_LONG
+
+type instance T CUSeconds = T HTYPE_USECONDS_T
+type instance L CUSeconds = L HTYPE_USECONDS_T
+type instance R CUSeconds = R HTYPE_USECONDS_T
+type instance MinT CUSeconds = MinT HTYPE_USECONDS_T
+type instance MaxT CUSeconds = MaxT HTYPE_USECONDS_T
+
+type instance T CUShort = T HTYPE_UNSIGNED_SHORT
+type instance L CUShort = L HTYPE_UNSIGNED_SHORT
+type instance R CUShort = R HTYPE_UNSIGNED_SHORT
+type instance MinT CUShort = MinT HTYPE_UNSIGNED_SHORT
+type instance MaxT CUShort = MaxT HTYPE_UNSIGNED_SHORT
+
+type instance T CWchar = T HTYPE_WCHAR_T
+type instance L CWchar = L HTYPE_WCHAR_T
+type instance R CWchar = R HTYPE_WCHAR_T
+type instance MinT CWchar = MinT HTYPE_WCHAR_T
+type instance MaxT CWchar = MaxT HTYPE_WCHAR_T
+
