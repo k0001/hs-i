@@ -46,16 +46,24 @@ instance forall (l :: K.Integer) (r :: K.Integer).
     , r <= MaxT Int )
   type MinI Int l r = l
   type MaxI Int l r = r
-  from x | K.SomeInteger (_ :: Proxy t) <- K.someIntegerVal (toInteger x) = do
-    Dict <- leInteger @l @t
-    Dict <- leInteger @t @r
-    pure (UnsafeI x)
 
 instance
   ( Interval Int l r, InhabitedCtx Int l r
   ) => Inhabited Int l r where
   type InhabitedCtx Int l r = ()
   inhabitant = min
+  from x | K.SomeInteger (_ :: Proxy t) <- K.someIntegerVal (toInteger x) = do
+    Dict <- leInteger @l @t
+    Dict <- leInteger @t @r
+    pure (UnsafeI x)
+  negate' x = from =<< toIntegralSized (P.negate (toInteger (unwrap x)))
+  recip' _ = Nothing
+  a `plus` b = from =<< toIntegralSized (toInteger (unwrap a) +
+                                         toInteger (unwrap b))
+  a `mult` b = from =<< toIntegralSized (toInteger (unwrap a) *
+                                         toInteger (unwrap b))
+  a `minus` b = from =<< toIntegralSized (toInteger (unwrap a) -
+                                          toInteger (unwrap b))
 
 instance forall t l r.
   ( Inhabited Int l r, KnownCtx Int t l r
@@ -71,48 +79,16 @@ instance forall l r. (Inhabited Int l r) => With Int l r where
         Dict <- leInteger @t @r
         pure (g pt)
 
-instance
-  ( Inhabited Int l r, PredCtx Int l r
-  ) => Pred Int l r where
-  type PredCtx Int l r = l /= r
+instance (Inhabited Int l r, l /= r) => Discrete Int l r where
   pred i = UnsafeI (unwrap i - 1) <$ guard (min < i)
-
-instance
-  ( Inhabited Int l r, SuccCtx Int l r
-  ) => Succ Int l r where
-  type SuccCtx Int l r = l /= r
   succ i = UnsafeI (unwrap i + 1) <$ guard (i < max)
 
-instance (Inhabited Int l r, PlusCtx Int l r) => Plus Int l r where
-  type PlusCtx Int l r = ()
-  a `plus` b = from =<< toIntegralSized (toInteger (unwrap a) +
-                                         toInteger (unwrap b))
-
-instance (Plus Int l r, Zero Int l r, MayNegateCtx Int l r)
-  => MayNegate Int l r where
-  type MayNegateCtx Int l r = l < K.P 0
-  negate' x = from =<< toIntegralSized (P.negate (toInteger (unwrap x)))
-
-instance (MayNegate Int l r, NegateCtx Int l r)
-  => Negate Int l r where
-  type NegateCtx Int l r = l == K.Negate r
+instance (Zero Int l r, l == K.Negate r) => Negate Int l r where
   negate = UnsafeI . P.negate . unwrap
 
-instance (Inhabited Int l r, MultCtx Int l r) => Mult Int l r where
-  type MultCtx Int l r = ()
-  a `mult` b = from =<< toIntegralSized (toInteger (unwrap a) *
-                                         toInteger (unwrap b))
-
-instance (Inhabited Int l r, MinusCtx Int l r) => Minus Int l r where
-  type MinusCtx Int l r = ()
-  a `minus` b = from =<< toIntegralSized (toInteger (unwrap a) -
-                                          toInteger (unwrap b))
-
-instance (Inhabited Int l r, ZeroCtx Int l r) => Zero Int l r where
-  type ZeroCtx Int l r = (l <= K.P 0, K.P 0 <= r)
+instance (Inhabited Int l r, l <= K.P 0, K.P 0 <= r) => Zero Int l r where
   zero = UnsafeI 0
 
-instance (Inhabited Int l r, OneCtx Int l r) => One Int l r where
-  type OneCtx Int l r = (l <= K.P 1, K.P 1 <= r)
+instance (Inhabited Int l r, l <= K.P 1, K.P 1 <= r) => One Int l r where
   one = UnsafeI 1
 

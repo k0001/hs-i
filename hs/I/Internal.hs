@@ -105,21 +105,6 @@ class IntervalCtx x l r => Interval (x :: Type) (l :: L x) (r :: R x) where
   type MaxI x l r = L.TypeError
     ('L.Text "MaxI not defined in instance ‘" 'L.:<>:
      'L.ShowType (Interval x l r) 'L.:<>: 'L.Text "’")
-  -- | Wrap the @x@ value in the interval @'I' x l r@, if it fits.
-  --
-  -- * Consider using 'wrap' if the interval includes all values of type @x@.
-  --
-  -- * Consider using 'known' if you have type-level knowledge
-  -- about the value of @x@.
-  --
-  -- [Identity law]
-  --
-  -- @
-  -- forall (x :: 'Type').
-  --   /such that/ 'isJust' ('from' x).
-  --     'fmap' 'unwrap' ('from' x)  ==  'Just' x
-  -- @
-  from :: x -> Maybe (I x l r)
 
 -- | 'Interval's that are not empty implement an 'Inhabited' instance.
 --
@@ -136,6 +121,37 @@ class (Interval x l r, InhabitedCtx x l r)
   -- No guarantees are made about the value of 'inhabitant' other than the
   -- fact that it is known to inhabit the interval.
   inhabitant :: I x l r
+  -- | Wrap the @x@ value in the interval @'I' x l r@, if it fits.
+  --
+  -- * Consider using 'wrap' if the interval includes all values of type @x@.
+  --
+  -- * Consider using 'known' if you have type-level knowledge
+  -- about the value of @x@.
+  --
+  -- [Identity law]
+  --
+  -- @
+  -- forall (x :: 'Type').
+  --   /such that/ 'isJust' ('from' x).
+  --     'fmap' 'unwrap' ('from' x)  ==  'Just' x
+  -- @
+  from :: x -> Maybe (I x l r)
+  -- | @a `'plus'` b@ adds @a@ and @b@
+  -- 'Nothing' if the result would be out of the interval.
+  plus :: I x l r -> I x l r -> Maybe (I x l r)
+  -- 'Nothing' if the result would be out of the interval.
+  mult :: I x l r -> I x l r -> Maybe (I x l r)
+  -- | @a `'minus'` b@ substracts @b@ from @a@.
+  -- 'Nothing' if the result would be out of the interval.
+  minus :: I x l r -> I x l r -> Maybe (I x l r)
+  -- | @'negate'' a@ is the additive inverse of @a@.
+  -- 'Nothing' if the result would be out of the interval.
+  -- See 'negate', too.
+  negate' :: I x l r -> Maybe (I x l r)
+  -- | @'recip'' a@ is the multiplicative inverse of @a@.
+  -- 'Nothing' if the result would be out of the interval.
+  -- See 'recip', too.
+  recip' :: I x l r -> Maybe (I x l r)
 
 -- | Wrap @x@ in @'I' x l r@, making sure that @x@ is within the interval
 -- ends by clamping it to @'MinI' x l r@ if less than @l@, or to
@@ -153,88 +169,49 @@ clamp x
   | otherwise                  = UnsafeI x
 
 class
-  ( Inhabited x l r, PredCtx x l r
-  ) => Pred (x :: Type) (l :: L x) (r :: R x) where
-  type PredCtx x l r :: Constraint
-  -- | __Pred__ecessor. That is, the previous value within the interval.
+  ( Inhabited x l r
+  ) => Discrete (x :: Type) (l :: L x) (r :: R x) where
+  -- | __Pred__ecessor. That is, the previous /discrete/ value in the interval.
   pred :: I x l r -> Maybe (I x l r)
-
-class
-  ( Inhabited x l r, SuccCtx x l r
-  ) => Succ (x :: Type) (l :: L x) (r :: R x) where
-  type SuccCtx x l r :: Constraint
-  -- | __Succ__essor. That is, the next value within the interval.
+  -- | __Succ__essor. That is, the next /discrete/ value in the interval.
   succ :: I x l r -> Maybe (I x l r)
 
--- | Intervals supporting /addition/.
-class (Inhabited x l r, PlusCtx x l r)
-  => Plus (x :: Type) (l :: L x) (r :: R x) where
-  type PlusCtx x l r :: Constraint
-  -- | @a `'plus'` b@ adds @a@ and @b@
-  -- 'Nothing' if the result would be out of the interval.
-  plus :: I x l r -> I x l r -> Maybe (I x l r)
-
--- | Intervals supporting /multiplication/.
-class (Inhabited x l r, MultCtx x l r)
-  => Mult (x :: Type) (l :: L x) (r :: R x) where
-  type MultCtx x l r :: Constraint
-  -- 'Nothing' if the result would be out of the interval.
-  mult :: I x l r -> I x l r -> Maybe (I x l r)
-
--- | Intervals supporting /subtraction/.
-class (Inhabited x l r, MinusCtx x l r)
-  => Minus (x :: Type) (l :: L x) (r :: R x) where
-  type MinusCtx x l r :: Constraint
-  -- | @a `'minus'` b@ substracts @b@ from @a@.
-  -- 'Nothing' if the result would be out of the interval.
-  minus :: I x l r -> I x l r -> Maybe (I x l r)
-
 -- | Intervals supporting /zero/.
-class (Inhabited x l r, ZeroCtx x l r)
-  => Zero (x :: Type) (l :: L x) (r :: R x) where
-  type ZeroCtx x l r :: Constraint
+class (Inhabited x l r) => Zero (x :: Type) (l :: L x) (r :: R x) where
   -- | Zero.
   zero :: I x l r
 
 -- | Intervals supporting /one/.
-class (Inhabited x l r, OneCtx x l r)
-  => One (x :: Type) (l :: L x) (r :: R x) where
-  type OneCtx x l r :: Constraint
+class (Inhabited x l r) => One (x :: Type) (l :: L x) (r :: R x) where
   -- | One.
   one :: I x l r
 
--- | Intervals /maybe/ supporting /additive inverse/.
-class (Plus x l r, Zero x l r, Minus x l r, MayNegateCtx x l r)
-  => MayNegate (x :: Type) (l :: L x) (r :: R x) where
-  type MayNegateCtx x l r :: Constraint
-  -- | Additive inverse, if it fits in the interval.
-  negate' :: I x l r -> Maybe (I x l r)
-
 -- | Intervals /fully/ supporting /additive inverse/.
-class (MayNegate x l r, NegateCtx x l r)
-  => Negate (x :: Type) (l :: L x) (r :: R x) where
-  type NegateCtx x l r :: Constraint
+class (Zero x l r) => Negate (x :: Type) (l :: L x) (r :: R x) where
   -- | Additive inverse, if it fits in the interval.
+  --
+  -- @
+  -- forall (a :: 'I' x l r).
+  --   /such that there is a/ 'Negate' x l r /instance.
+  --     'Just' ('negate' a)  = 'negate'' a
+  -- @
   negate :: I x l r -> I x l r
 
--- | Intervals /maybe/ supporting /multiplicative inverse/.
-class (Mult x l r, One x l r, MayRecipCtx x l r)
-  => MayRecip (x :: Type) (l :: L x) (r :: R x) where
-  type MayRecipCtx x l r :: Constraint
-  -- | Multiplicative inverse, if it fits in the interval.
-  recip' :: I x l r -> I x l r
-
 -- | Intervals /fully/ supporting /multiplicative inverse/.
-class (MayRecip x l r, RecipCtx x l r)
-  => Recip (x :: Type) (l :: L x) (r :: R x) where
-  type RecipCtx x l r :: Constraint
+class (One x l r) => Recip (x :: Type) (l :: L x) (r :: R x) where
   -- | Multiplicative inverse, if it fits in the interval.
+  --
+  -- @
+  -- forall (a :: 'I' x l r).
+  --   /such that there is a/ 'Recip' x l r /instance.
+  --     'Just' ('recip' a)  = 'recip'' a
+  -- @
   recip :: I x l r -> I x l r
 
--- | @a `'div'` b@ divides @a@ by @b@. 'Nothing' if the result doesn't fit in
--- the interval.
-div :: forall x l r. Recip x l r => I x l r -> I x l r -> Maybe (I x l r)
-div a b = mult a (recip b)
+-- | @a `'div'` b@ divides @a@ by @b@.
+-- 'Nothing' if the result doesn't fit in the interval.
+div :: forall x l r. Inhabited x l r => I x l r -> I x l r -> Maybe (I x l r)
+div a b = mult a =<< recip' b
 
 -- | Obtain the single element in the @'I' x l r@ interval.
 single

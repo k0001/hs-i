@@ -26,16 +26,10 @@ module I
  , Inhabited(..)
  , wrap
  , clamp
- , Pred(..)
- , Succ(..)
+ , Discrete(..)
  , One(..)
  , Zero(..)
- , Plus(..)
- , MayNegate(..)
  , Negate(..)
- , Minus(..)
- , Mult(..)
- , MayRecip(..)
  , Recip(..)
  , div
    -- * Known interval elements

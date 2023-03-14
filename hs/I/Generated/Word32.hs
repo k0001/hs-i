@@ -46,17 +46,25 @@ instance forall l r.
     , r <= MaxT Word32 )
   type MinI Word32 l r = l
   type MaxI Word32 l r = r
-  from x = do
-    L.SomeNat (_ :: Proxy x) <- L.someNatVal (toInteger x)
-    Dict <- leNatural @l @x
-    Dict <- leNatural @x @r
-    pure (UnsafeI x)
 
 instance
   ( Interval Word32 l r, InhabitedCtx Word32 l r
   ) => Inhabited Word32 l r where
   type InhabitedCtx Word32 l r = ()
   inhabitant = min
+  from x = do
+    L.SomeNat (_ :: Proxy x) <- L.someNatVal (toInteger x)
+    Dict <- leNatural @l @x
+    Dict <- leNatural @x @r
+    pure (UnsafeI x)
+  negate' _ = Nothing
+  recip' _ = Nothing
+  a `plus` b = from =<< toIntegralSized (toInteger (unwrap a) +
+                                         toInteger (unwrap b))
+  a `mult` b = from =<< toIntegralSized (toInteger (unwrap a) *
+                                         toInteger (unwrap b))
+  a `minus` b = from =<< toIntegralSized (toInteger (unwrap a) -
+                                          toInteger (unwrap b))
 
 instance forall t l r.
   ( Inhabited Word32 l r, KnownCtx Word32 t l r
@@ -72,36 +80,13 @@ instance forall l r. (Inhabited Word32 l r) => With Word32 l r where
     pure (g pt)
 
 instance
-  ( Inhabited Word32 l r, PredCtx Word32 l r
-  ) => Pred Word32 l r where
-  type PredCtx Word32 l r = l /= r
+  ( Inhabited Word32 l r, l /= r
+  ) => Discrete Word32 l r where
   pred i = UnsafeI (unwrap i - 1) <$ guard (min < i)
-
-instance
-  ( Inhabited Word32 l r, SuccCtx Word32 l r
-  ) => Succ Word32 l r where
-  type SuccCtx Word32 l r = l /= r
   succ i = UnsafeI (unwrap i + 1) <$ guard (i < max)
 
-instance (Inhabited Word32 l r, PlusCtx Word32 l r) => Plus Word32 l r where
-  type PlusCtx Word32 l r = ()
-  a `plus` b = from =<< toIntegralSized (toInteger (unwrap a) +
-                                         toInteger (unwrap b))
-
-instance (Inhabited Word32 l r, MultCtx Word32 l r) => Mult Word32 l r where
-  type MultCtx Word32 l r = ()
-  a `mult` b = from =<< toIntegralSized (toInteger (unwrap a) *
-                                         toInteger (unwrap b))
-
-instance (Inhabited Word32 l r, MinusCtx Word32 l r) => Minus Word32 l r where
-  type MinusCtx Word32 l r = ()
-  a `minus` b = from =<< toIntegralSized (toInteger (unwrap a) -
-                                          toInteger (unwrap b))
-
-instance (Inhabited Word32 0 r, ZeroCtx Word32 0 r) => Zero Word32 0 r where
-  type ZeroCtx Word32 0 r = ()
+instance (Inhabited Word32 0 r) => Zero Word32 0 r where
   zero = UnsafeI 0
 
-instance (Inhabited Word32 l r, OneCtx Word32 l r) => One Word32 l r where
-  type OneCtx Word32 l r = (l <= 1, 1 <= r)
+instance (Inhabited Word32 l r, l <= 1, 1 <= r) => One Word32 l r where
   one = UnsafeI 1

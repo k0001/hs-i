@@ -45,17 +45,25 @@ instance forall l r.
     , r <= MaxT Word8 )
   type MinI Word8 l r = l
   type MaxI Word8 l r = r
-  from x = do
-    L.SomeNat (_ :: Proxy x) <- L.someNatVal (toInteger x)
-    Dict <- leNatural @l @x
-    Dict <- leNatural @x @r
-    pure (UnsafeI x)
 
 instance
   ( Interval Word8 l r, InhabitedCtx Word8 l r
   ) => Inhabited Word8 l r where
   type InhabitedCtx Word8 l r = ()
   inhabitant = min
+  from x = do
+    L.SomeNat (_ :: Proxy x) <- L.someNatVal (toInteger x)
+    Dict <- leNatural @l @x
+    Dict <- leNatural @x @r
+    pure (UnsafeI x)
+  negate' _ = Nothing
+  recip' _ = Nothing
+  a `plus` b = from =<< toIntegralSized (toInteger (unwrap a) +
+                                         toInteger (unwrap b))
+  a `mult` b = from =<< toIntegralSized (toInteger (unwrap a) *
+                                         toInteger (unwrap b))
+  a `minus` b = from =<< toIntegralSized (toInteger (unwrap a) -
+                                          toInteger (unwrap b))
 
 instance forall t l r.
   ( Inhabited Word8 l r, KnownCtx Word8 t l r
@@ -71,36 +79,13 @@ instance forall l r. (Inhabited Word8 l r) => With Word8 l r where
     pure (g pt)
 
 instance
-  ( Inhabited Word8 l r, PredCtx Word8 l r
-  ) => Pred Word8 l r where
-  type PredCtx Word8 l r = l /= r
+  ( Inhabited Word8 l r, l /= r
+  ) => Discrete Word8 l r where
   pred i = UnsafeI (unwrap i - 1) <$ guard (min < i)
-
-instance
-  ( Inhabited Word8 l r, SuccCtx Word8 l r
-  ) => Succ Word8 l r where
-  type SuccCtx Word8 l r = l /= r
   succ i = UnsafeI (unwrap i + 1) <$ guard (i < max)
 
-instance (Inhabited Word8 l r, PlusCtx Word8 l r) => Plus Word8 l r where
-  type PlusCtx Word8 l r = ()
-  a `plus` b = from =<< toIntegralSized (toInteger (unwrap a) +
-                                         toInteger (unwrap b))
-
-instance (Inhabited Word8 l r, MultCtx Word8 l r) => Mult Word8 l r where
-  type MultCtx Word8 l r = ()
-  a `mult` b = from =<< toIntegralSized (toInteger (unwrap a) *
-                                         toInteger (unwrap b))
-
-instance (Inhabited Word8 l r, MinusCtx Word8 l r) => Minus Word8 l r where
-  type MinusCtx Word8 l r = ()
-  a `minus` b = from =<< toIntegralSized (toInteger (unwrap a) -
-                                          toInteger (unwrap b))
-
-instance (Inhabited Word8 0 r, ZeroCtx Word8 0 r) => Zero Word8 0 r where
-  type ZeroCtx Word8 0 r = ()
+instance (Inhabited Word8 0 r) => Zero Word8 0 r where
   zero = UnsafeI 0
 
-instance (Inhabited Word8 l r, OneCtx Word8 l r) => One Word8 l r where
-  type OneCtx Word8 l r = (l <= 1, 1 <= r)
+instance (Inhabited Word8 l r, l <= 1, 1 <= r) => One Word8 l r where
   one = UnsafeI 1

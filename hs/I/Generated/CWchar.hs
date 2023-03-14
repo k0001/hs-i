@@ -46,16 +46,24 @@ instance forall (l :: K.Integer) (r :: K.Integer).
     , r <= MaxT CWchar )
   type MinI CWchar l r = l
   type MaxI CWchar l r = r
-  from x | K.SomeInteger (_ :: Proxy t) <- K.someIntegerVal (toInteger x) = do
-    Dict <- leInteger @l @t
-    Dict <- leInteger @t @r
-    pure (UnsafeI x)
 
 instance
   ( Interval CWchar l r, InhabitedCtx CWchar l r
   ) => Inhabited CWchar l r where
   type InhabitedCtx CWchar l r = ()
   inhabitant = min
+  from x | K.SomeInteger (_ :: Proxy t) <- K.someIntegerVal (toInteger x) = do
+    Dict <- leInteger @l @t
+    Dict <- leInteger @t @r
+    pure (UnsafeI x)
+  negate' x = from =<< toIntegralSized (P.negate (toInteger (unwrap x)))
+  recip' _ = Nothing
+  a `plus` b = from =<< toIntegralSized (toInteger (unwrap a) +
+                                         toInteger (unwrap b))
+  a `mult` b = from =<< toIntegralSized (toInteger (unwrap a) *
+                                         toInteger (unwrap b))
+  a `minus` b = from =<< toIntegralSized (toInteger (unwrap a) -
+                                          toInteger (unwrap b))
 
 instance forall t l r.
   ( Inhabited CWchar l r, KnownCtx CWchar t l r
@@ -71,48 +79,16 @@ instance forall l r. (Inhabited CWchar l r) => With CWchar l r where
         Dict <- leInteger @t @r
         pure (g pt)
 
-instance
-  ( Inhabited CWchar l r, PredCtx CWchar l r
-  ) => Pred CWchar l r where
-  type PredCtx CWchar l r = l /= r
+instance (Inhabited CWchar l r, l /= r) => Discrete CWchar l r where
   pred i = UnsafeI (unwrap i - 1) <$ guard (min < i)
-
-instance
-  ( Inhabited CWchar l r, SuccCtx CWchar l r
-  ) => Succ CWchar l r where
-  type SuccCtx CWchar l r = l /= r
   succ i = UnsafeI (unwrap i + 1) <$ guard (i < max)
 
-instance (Inhabited CWchar l r, PlusCtx CWchar l r) => Plus CWchar l r where
-  type PlusCtx CWchar l r = ()
-  a `plus` b = from =<< toIntegralSized (toInteger (unwrap a) +
-                                         toInteger (unwrap b))
-
-instance (Plus CWchar l r, Zero CWchar l r, MayNegateCtx CWchar l r)
-  => MayNegate CWchar l r where
-  type MayNegateCtx CWchar l r = l < K.P 0
-  negate' x = from =<< toIntegralSized (P.negate (toInteger (unwrap x)))
-
-instance (MayNegate CWchar l r, NegateCtx CWchar l r)
-  => Negate CWchar l r where
-  type NegateCtx CWchar l r = l == K.Negate r
+instance (Zero CWchar l r, l == K.Negate r) => Negate CWchar l r where
   negate = UnsafeI . P.negate . unwrap
 
-instance (Inhabited CWchar l r, MultCtx CWchar l r) => Mult CWchar l r where
-  type MultCtx CWchar l r = ()
-  a `mult` b = from =<< toIntegralSized (toInteger (unwrap a) *
-                                         toInteger (unwrap b))
-
-instance (Inhabited CWchar l r, MinusCtx CWchar l r) => Minus CWchar l r where
-  type MinusCtx CWchar l r = ()
-  a `minus` b = from =<< toIntegralSized (toInteger (unwrap a) -
-                                          toInteger (unwrap b))
-
-instance (Inhabited CWchar l r, ZeroCtx CWchar l r) => Zero CWchar l r where
-  type ZeroCtx CWchar l r = (l <= K.P 0, K.P 0 <= r)
+instance (Inhabited CWchar l r, l <= K.P 0, K.P 0 <= r) => Zero CWchar l r where
   zero = UnsafeI 0
 
-instance (Inhabited CWchar l r, OneCtx CWchar l r) => One CWchar l r where
-  type OneCtx CWchar l r = (l <= K.P 1, K.P 1 <= r)
+instance (Inhabited CWchar l r, l <= K.P 1, K.P 1 <= r) => One CWchar l r where
   one = UnsafeI 1
 

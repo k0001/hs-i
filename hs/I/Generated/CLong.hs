@@ -46,16 +46,24 @@ instance forall (l :: K.Integer) (r :: K.Integer).
     , r <= MaxT CLong )
   type MinI CLong l r = l
   type MaxI CLong l r = r
-  from x | K.SomeInteger (_ :: Proxy t) <- K.someIntegerVal (toInteger x) = do
-    Dict <- leInteger @l @t
-    Dict <- leInteger @t @r
-    pure (UnsafeI x)
 
 instance
   ( Interval CLong l r, InhabitedCtx CLong l r
   ) => Inhabited CLong l r where
   type InhabitedCtx CLong l r = ()
   inhabitant = min
+  from x | K.SomeInteger (_ :: Proxy t) <- K.someIntegerVal (toInteger x) = do
+    Dict <- leInteger @l @t
+    Dict <- leInteger @t @r
+    pure (UnsafeI x)
+  negate' x = from =<< toIntegralSized (P.negate (toInteger (unwrap x)))
+  recip' _ = Nothing
+  a `plus` b = from =<< toIntegralSized (toInteger (unwrap a) +
+                                         toInteger (unwrap b))
+  a `mult` b = from =<< toIntegralSized (toInteger (unwrap a) *
+                                         toInteger (unwrap b))
+  a `minus` b = from =<< toIntegralSized (toInteger (unwrap a) -
+                                          toInteger (unwrap b))
 
 instance forall t l r.
   ( Inhabited CLong l r, KnownCtx CLong t l r
@@ -71,48 +79,16 @@ instance forall l r. (Inhabited CLong l r) => With CLong l r where
         Dict <- leInteger @t @r
         pure (g pt)
 
-instance
-  ( Inhabited CLong l r, PredCtx CLong l r
-  ) => Pred CLong l r where
-  type PredCtx CLong l r = l /= r
+instance (Inhabited CLong l r, l /= r) => Discrete CLong l r where
   pred i = UnsafeI (unwrap i - 1) <$ guard (min < i)
-
-instance
-  ( Inhabited CLong l r, SuccCtx CLong l r
-  ) => Succ CLong l r where
-  type SuccCtx CLong l r = l /= r
   succ i = UnsafeI (unwrap i + 1) <$ guard (i < max)
 
-instance (Inhabited CLong l r, PlusCtx CLong l r) => Plus CLong l r where
-  type PlusCtx CLong l r = ()
-  a `plus` b = from =<< toIntegralSized (toInteger (unwrap a) +
-                                         toInteger (unwrap b))
-
-instance (Plus CLong l r, Zero CLong l r, MayNegateCtx CLong l r)
-  => MayNegate CLong l r where
-  type MayNegateCtx CLong l r = l < K.P 0
-  negate' x = from =<< toIntegralSized (P.negate (toInteger (unwrap x)))
-
-instance (MayNegate CLong l r, NegateCtx CLong l r)
-  => Negate CLong l r where
-  type NegateCtx CLong l r = l == K.Negate r
+instance (Zero CLong l r, l == K.Negate r) => Negate CLong l r where
   negate = UnsafeI . P.negate . unwrap
 
-instance (Inhabited CLong l r, MultCtx CLong l r) => Mult CLong l r where
-  type MultCtx CLong l r = ()
-  a `mult` b = from =<< toIntegralSized (toInteger (unwrap a) *
-                                         toInteger (unwrap b))
-
-instance (Inhabited CLong l r, MinusCtx CLong l r) => Minus CLong l r where
-  type MinusCtx CLong l r = ()
-  a `minus` b = from =<< toIntegralSized (toInteger (unwrap a) -
-                                          toInteger (unwrap b))
-
-instance (Inhabited CLong l r, ZeroCtx CLong l r) => Zero CLong l r where
-  type ZeroCtx CLong l r = (l <= K.P 0, K.P 0 <= r)
+instance (Inhabited CLong l r, l <= K.P 0, K.P 0 <= r) => Zero CLong l r where
   zero = UnsafeI 0
 
-instance (Inhabited CLong l r, OneCtx CLong l r) => One CLong l r where
-  type OneCtx CLong l r = (l <= K.P 1, K.P 1 <= r)
+instance (Inhabited CLong l r, l <= K.P 1, K.P 1 <= r) => One CLong l r where
   one = UnsafeI 1
 

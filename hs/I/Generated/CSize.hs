@@ -46,17 +46,25 @@ instance forall l r.
     , r <= MaxT CSize )
   type MinI CSize l r = l
   type MaxI CSize l r = r
-  from x = do
-    L.SomeNat (_ :: Proxy x) <- L.someNatVal (toInteger x)
-    Dict <- leNatural @l @x
-    Dict <- leNatural @x @r
-    pure (UnsafeI x)
 
 instance
   ( Interval CSize l r, InhabitedCtx CSize l r
   ) => Inhabited CSize l r where
   type InhabitedCtx CSize l r = ()
   inhabitant = min
+  from x = do
+    L.SomeNat (_ :: Proxy x) <- L.someNatVal (toInteger x)
+    Dict <- leNatural @l @x
+    Dict <- leNatural @x @r
+    pure (UnsafeI x)
+  negate' _ = Nothing
+  recip' _ = Nothing
+  a `plus` b = from =<< toIntegralSized (toInteger (unwrap a) +
+                                         toInteger (unwrap b))
+  a `mult` b = from =<< toIntegralSized (toInteger (unwrap a) *
+                                         toInteger (unwrap b))
+  a `minus` b = from =<< toIntegralSized (toInteger (unwrap a) -
+                                          toInteger (unwrap b))
 
 instance forall t l r.
   ( Inhabited CSize l r, KnownCtx CSize t l r
@@ -72,36 +80,13 @@ instance forall l r. (Inhabited CSize l r) => With CSize l r where
     pure (g pt)
 
 instance
-  ( Inhabited CSize l r, PredCtx CSize l r
-  ) => Pred CSize l r where
-  type PredCtx CSize l r = l /= r
+  ( Inhabited CSize l r, l /= r
+  ) => Discrete CSize l r where
   pred i = UnsafeI (unwrap i - 1) <$ guard (min < i)
-
-instance
-  ( Inhabited CSize l r, SuccCtx CSize l r
-  ) => Succ CSize l r where
-  type SuccCtx CSize l r = l /= r
   succ i = UnsafeI (unwrap i + 1) <$ guard (i < max)
 
-instance (Inhabited CSize l r, PlusCtx CSize l r) => Plus CSize l r where
-  type PlusCtx CSize l r = ()
-  a `plus` b = from =<< toIntegralSized (toInteger (unwrap a) +
-                                         toInteger (unwrap b))
-
-instance (Inhabited CSize l r, MultCtx CSize l r) => Mult CSize l r where
-  type MultCtx CSize l r = ()
-  a `mult` b = from =<< toIntegralSized (toInteger (unwrap a) *
-                                         toInteger (unwrap b))
-
-instance (Inhabited CSize l r, MinusCtx CSize l r) => Minus CSize l r where
-  type MinusCtx CSize l r = ()
-  a `minus` b = from =<< toIntegralSized (toInteger (unwrap a) -
-                                          toInteger (unwrap b))
-
-instance (Inhabited CSize 0 r, ZeroCtx CSize 0 r) => Zero CSize 0 r where
-  type ZeroCtx CSize 0 r = ()
+instance (Inhabited CSize 0 r) => Zero CSize 0 r where
   zero = UnsafeI 0
 
-instance (Inhabited CSize l r, OneCtx CSize l r) => One CSize l r where
-  type OneCtx CSize l r = (l <= 1, 1 <= r)
+instance (Inhabited CSize l r, l <= 1, 1 <= r) => One CSize l r where
   one = UnsafeI 1

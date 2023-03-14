@@ -46,16 +46,24 @@ instance forall (l :: K.Integer) (r :: K.Integer).
     , r <= MaxT CIntMax )
   type MinI CIntMax l r = l
   type MaxI CIntMax l r = r
-  from x | K.SomeInteger (_ :: Proxy t) <- K.someIntegerVal (toInteger x) = do
-    Dict <- leInteger @l @t
-    Dict <- leInteger @t @r
-    pure (UnsafeI x)
 
 instance
   ( Interval CIntMax l r, InhabitedCtx CIntMax l r
   ) => Inhabited CIntMax l r where
   type InhabitedCtx CIntMax l r = ()
   inhabitant = min
+  from x | K.SomeInteger (_ :: Proxy t) <- K.someIntegerVal (toInteger x) = do
+    Dict <- leInteger @l @t
+    Dict <- leInteger @t @r
+    pure (UnsafeI x)
+  negate' x = from =<< toIntegralSized (P.negate (toInteger (unwrap x)))
+  recip' _ = Nothing
+  a `plus` b = from =<< toIntegralSized (toInteger (unwrap a) +
+                                         toInteger (unwrap b))
+  a `mult` b = from =<< toIntegralSized (toInteger (unwrap a) *
+                                         toInteger (unwrap b))
+  a `minus` b = from =<< toIntegralSized (toInteger (unwrap a) -
+                                          toInteger (unwrap b))
 
 instance forall t l r.
   ( Inhabited CIntMax l r, KnownCtx CIntMax t l r
@@ -71,48 +79,16 @@ instance forall l r. (Inhabited CIntMax l r) => With CIntMax l r where
         Dict <- leInteger @t @r
         pure (g pt)
 
-instance
-  ( Inhabited CIntMax l r, PredCtx CIntMax l r
-  ) => Pred CIntMax l r where
-  type PredCtx CIntMax l r = l /= r
+instance (Inhabited CIntMax l r, l /= r) => Discrete CIntMax l r where
   pred i = UnsafeI (unwrap i - 1) <$ guard (min < i)
-
-instance
-  ( Inhabited CIntMax l r, SuccCtx CIntMax l r
-  ) => Succ CIntMax l r where
-  type SuccCtx CIntMax l r = l /= r
   succ i = UnsafeI (unwrap i + 1) <$ guard (i < max)
 
-instance (Inhabited CIntMax l r, PlusCtx CIntMax l r) => Plus CIntMax l r where
-  type PlusCtx CIntMax l r = ()
-  a `plus` b = from =<< toIntegralSized (toInteger (unwrap a) +
-                                         toInteger (unwrap b))
-
-instance (Plus CIntMax l r, Zero CIntMax l r, MayNegateCtx CIntMax l r)
-  => MayNegate CIntMax l r where
-  type MayNegateCtx CIntMax l r = l < K.P 0
-  negate' x = from =<< toIntegralSized (P.negate (toInteger (unwrap x)))
-
-instance (MayNegate CIntMax l r, NegateCtx CIntMax l r)
-  => Negate CIntMax l r where
-  type NegateCtx CIntMax l r = l == K.Negate r
+instance (Zero CIntMax l r, l == K.Negate r) => Negate CIntMax l r where
   negate = UnsafeI . P.negate . unwrap
 
-instance (Inhabited CIntMax l r, MultCtx CIntMax l r) => Mult CIntMax l r where
-  type MultCtx CIntMax l r = ()
-  a `mult` b = from =<< toIntegralSized (toInteger (unwrap a) *
-                                         toInteger (unwrap b))
-
-instance (Inhabited CIntMax l r, MinusCtx CIntMax l r) => Minus CIntMax l r where
-  type MinusCtx CIntMax l r = ()
-  a `minus` b = from =<< toIntegralSized (toInteger (unwrap a) -
-                                          toInteger (unwrap b))
-
-instance (Inhabited CIntMax l r, ZeroCtx CIntMax l r) => Zero CIntMax l r where
-  type ZeroCtx CIntMax l r = (l <= K.P 0, K.P 0 <= r)
+instance (Inhabited CIntMax l r, l <= K.P 0, K.P 0 <= r) => Zero CIntMax l r where
   zero = UnsafeI 0
 
-instance (Inhabited CIntMax l r, OneCtx CIntMax l r) => One CIntMax l r where
-  type OneCtx CIntMax l r = (l <= K.P 1, K.P 1 <= r)
+instance (Inhabited CIntMax l r, l <= K.P 1, K.P 1 <= r) => One CIntMax l r where
   one = UnsafeI 1
 

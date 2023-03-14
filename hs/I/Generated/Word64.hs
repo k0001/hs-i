@@ -46,17 +46,25 @@ instance forall l r.
     , r <= MaxT Word64 )
   type MinI Word64 l r = l
   type MaxI Word64 l r = r
-  from x = do
-    L.SomeNat (_ :: Proxy x) <- L.someNatVal (toInteger x)
-    Dict <- leNatural @l @x
-    Dict <- leNatural @x @r
-    pure (UnsafeI x)
 
 instance
   ( Interval Word64 l r, InhabitedCtx Word64 l r
   ) => Inhabited Word64 l r where
   type InhabitedCtx Word64 l r = ()
   inhabitant = min
+  from x = do
+    L.SomeNat (_ :: Proxy x) <- L.someNatVal (toInteger x)
+    Dict <- leNatural @l @x
+    Dict <- leNatural @x @r
+    pure (UnsafeI x)
+  negate' _ = Nothing
+  recip' _ = Nothing
+  a `plus` b = from =<< toIntegralSized (toInteger (unwrap a) +
+                                         toInteger (unwrap b))
+  a `mult` b = from =<< toIntegralSized (toInteger (unwrap a) *
+                                         toInteger (unwrap b))
+  a `minus` b = from =<< toIntegralSized (toInteger (unwrap a) -
+                                          toInteger (unwrap b))
 
 instance forall t l r.
   ( Inhabited Word64 l r, KnownCtx Word64 t l r
@@ -72,36 +80,13 @@ instance forall l r. (Inhabited Word64 l r) => With Word64 l r where
     pure (g pt)
 
 instance
-  ( Inhabited Word64 l r, PredCtx Word64 l r
-  ) => Pred Word64 l r where
-  type PredCtx Word64 l r = l /= r
+  ( Inhabited Word64 l r, l /= r
+  ) => Discrete Word64 l r where
   pred i = UnsafeI (unwrap i - 1) <$ guard (min < i)
-
-instance
-  ( Inhabited Word64 l r, SuccCtx Word64 l r
-  ) => Succ Word64 l r where
-  type SuccCtx Word64 l r = l /= r
   succ i = UnsafeI (unwrap i + 1) <$ guard (i < max)
 
-instance (Inhabited Word64 l r, PlusCtx Word64 l r) => Plus Word64 l r where
-  type PlusCtx Word64 l r = ()
-  a `plus` b = from =<< toIntegralSized (toInteger (unwrap a) +
-                                         toInteger (unwrap b))
-
-instance (Inhabited Word64 l r, MultCtx Word64 l r) => Mult Word64 l r where
-  type MultCtx Word64 l r = ()
-  a `mult` b = from =<< toIntegralSized (toInteger (unwrap a) *
-                                         toInteger (unwrap b))
-
-instance (Inhabited Word64 l r, MinusCtx Word64 l r) => Minus Word64 l r where
-  type MinusCtx Word64 l r = ()
-  a `minus` b = from =<< toIntegralSized (toInteger (unwrap a) -
-                                          toInteger (unwrap b))
-
-instance (Inhabited Word64 0 r, ZeroCtx Word64 0 r) => Zero Word64 0 r where
-  type ZeroCtx Word64 0 r = ()
+instance (Inhabited Word64 0 r) => Zero Word64 0 r where
   zero = UnsafeI 0
 
-instance (Inhabited Word64 l r, OneCtx Word64 l r) => One Word64 l r where
-  type OneCtx Word64 l r = (l <= 1, 1 <= r)
+instance (Inhabited Word64 l r, l <= 1, 1 <= r) => One Word64 l r where
   one = UnsafeI 1

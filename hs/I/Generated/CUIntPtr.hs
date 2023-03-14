@@ -46,17 +46,25 @@ instance forall l r.
     , r <= MaxT CUIntPtr )
   type MinI CUIntPtr l r = l
   type MaxI CUIntPtr l r = r
-  from x = do
-    L.SomeNat (_ :: Proxy x) <- L.someNatVal (toInteger x)
-    Dict <- leNatural @l @x
-    Dict <- leNatural @x @r
-    pure (UnsafeI x)
 
 instance
   ( Interval CUIntPtr l r, InhabitedCtx CUIntPtr l r
   ) => Inhabited CUIntPtr l r where
   type InhabitedCtx CUIntPtr l r = ()
   inhabitant = min
+  from x = do
+    L.SomeNat (_ :: Proxy x) <- L.someNatVal (toInteger x)
+    Dict <- leNatural @l @x
+    Dict <- leNatural @x @r
+    pure (UnsafeI x)
+  negate' _ = Nothing
+  recip' _ = Nothing
+  a `plus` b = from =<< toIntegralSized (toInteger (unwrap a) +
+                                         toInteger (unwrap b))
+  a `mult` b = from =<< toIntegralSized (toInteger (unwrap a) *
+                                         toInteger (unwrap b))
+  a `minus` b = from =<< toIntegralSized (toInteger (unwrap a) -
+                                          toInteger (unwrap b))
 
 instance forall t l r.
   ( Inhabited CUIntPtr l r, KnownCtx CUIntPtr t l r
@@ -72,36 +80,13 @@ instance forall l r. (Inhabited CUIntPtr l r) => With CUIntPtr l r where
     pure (g pt)
 
 instance
-  ( Inhabited CUIntPtr l r, PredCtx CUIntPtr l r
-  ) => Pred CUIntPtr l r where
-  type PredCtx CUIntPtr l r = l /= r
+  ( Inhabited CUIntPtr l r, l /= r
+  ) => Discrete CUIntPtr l r where
   pred i = UnsafeI (unwrap i - 1) <$ guard (min < i)
-
-instance
-  ( Inhabited CUIntPtr l r, SuccCtx CUIntPtr l r
-  ) => Succ CUIntPtr l r where
-  type SuccCtx CUIntPtr l r = l /= r
   succ i = UnsafeI (unwrap i + 1) <$ guard (i < max)
 
-instance (Inhabited CUIntPtr l r, PlusCtx CUIntPtr l r) => Plus CUIntPtr l r where
-  type PlusCtx CUIntPtr l r = ()
-  a `plus` b = from =<< toIntegralSized (toInteger (unwrap a) +
-                                         toInteger (unwrap b))
-
-instance (Inhabited CUIntPtr l r, MultCtx CUIntPtr l r) => Mult CUIntPtr l r where
-  type MultCtx CUIntPtr l r = ()
-  a `mult` b = from =<< toIntegralSized (toInteger (unwrap a) *
-                                         toInteger (unwrap b))
-
-instance (Inhabited CUIntPtr l r, MinusCtx CUIntPtr l r) => Minus CUIntPtr l r where
-  type MinusCtx CUIntPtr l r = ()
-  a `minus` b = from =<< toIntegralSized (toInteger (unwrap a) -
-                                          toInteger (unwrap b))
-
-instance (Inhabited CUIntPtr 0 r, ZeroCtx CUIntPtr 0 r) => Zero CUIntPtr 0 r where
-  type ZeroCtx CUIntPtr 0 r = ()
+instance (Inhabited CUIntPtr 0 r) => Zero CUIntPtr 0 r where
   zero = UnsafeI 0
 
-instance (Inhabited CUIntPtr l r, OneCtx CUIntPtr l r) => One CUIntPtr l r where
-  type OneCtx CUIntPtr l r = (l <= 1, 1 <= r)
+instance (Inhabited CUIntPtr l r, l <= 1, 1 <= r) => One CUIntPtr l r where
   one = UnsafeI 1

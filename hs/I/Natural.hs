@@ -26,10 +26,6 @@ instance forall l.
   ) => Interval Natural l 'Nothing where
   type IntervalCtx Natural l 'Nothing = (L.KnownNat l, MinT Natural <= l)
   type MinI Natural l 'Nothing = l
-  from x = do
-    L.SomeNat (_ :: Proxy x) <- L.someNatVal (toInteger x)
-    Dict <- leNatural @l @x
-    pure (UnsafeI x)
 
 instance forall l r.
   ( IntervalCtx Natural l ('Just r)
@@ -41,23 +37,39 @@ instance forall l r.
     , l <= r )
   type MinI Natural l ('Just r) = l
   type MaxI Natural l ('Just r) = r
-  from x = do
-    L.SomeNat (_ :: Proxy x) <- L.someNatVal (toInteger x)
-    Dict <- leNatural @l @x
-    Dict <- leNatural @x @r
-    pure (UnsafeI x)
 
 instance
   ( Interval Natural l 'Nothing, InhabitedCtx Natural l 'Nothing
   ) => Inhabited Natural l 'Nothing where
   type InhabitedCtx Natural l 'Nothing = ()
   inhabitant = min
+  from x = do
+    L.SomeNat (_ :: Proxy x) <- L.someNatVal (toInteger x)
+    Dict <- leNatural @l @x
+    pure (UnsafeI x)
+  negate' _ = Nothing
+  recip' _ = Nothing
+  a `plus` b = from (unwrap a + unwrap b)
+  a `mult` b = from (unwrap a * unwrap b)
+  a `minus` b = from =<< toIntegralSized (toInteger (unwrap a) -
+                                          toInteger (unwrap b))
 
 instance
   ( Interval Natural l ('Just r), InhabitedCtx Natural l ('Just r)
   ) => Inhabited Natural l ('Just r) where
   type InhabitedCtx Natural l ('Just r) = ()
   inhabitant = min
+  from x = do
+    L.SomeNat (_ :: Proxy x) <- L.someNatVal (toInteger x)
+    Dict <- leNatural @l @x
+    Dict <- leNatural @x @r
+    pure (UnsafeI x)
+  negate' _ = Nothing
+  recip' _ = Nothing
+  a `plus` b = from (unwrap a + unwrap b)
+  a `mult` b = from (unwrap a * unwrap b)
+  a `minus` b = from =<< toIntegralSized (toInteger (unwrap a) -
+                                          toInteger (unwrap b))
 
 instance forall t l.
   ( Inhabited Natural l 'Nothing, KnownCtx Natural t l 'Nothing
@@ -86,54 +98,23 @@ instance forall l r. (Inhabited Natural l ('Just r))
     Dict <- leNatural @t @r
     pure (g pt)
 
-instance
-  ( Inhabited Natural l 'Nothing, PredCtx Natural l 'Nothing
-  ) => Pred Natural l 'Nothing where
-  type PredCtx Natural l 'Nothing = ()
+instance (Inhabited Natural l 'Nothing) => Discrete Natural l 'Nothing where
   pred i = UnsafeI (unwrap i - 1) <$ guard (min < i)
-
-instance
-  ( Inhabited Natural l ('Just r), PredCtx Natural l ('Just r)
-  ) => Pred Natural l ('Just r) where
-  type PredCtx Natural l ('Just r) = l /= r
-  pred i = UnsafeI (unwrap i - 1) <$ guard (min < i)
-
-instance
-  ( Inhabited Natural l 'Nothing, SuccCtx Natural l 'Nothing
-  ) => Succ Natural l 'Nothing where
-  type SuccCtx Natural l 'Nothing = ()
   succ i = pure (UnsafeI (unwrap i + 1))
 
 instance
-  ( Inhabited Natural l ('Just r), SuccCtx Natural l ('Just r)
-  ) => Succ Natural l ('Just r) where
-  type SuccCtx Natural l ('Just r) = l /= r
+  ( Inhabited Natural l ('Just r), l /= r
+  ) => Discrete Natural l ('Just r) where
+  pred i = UnsafeI (unwrap i - 1) <$ guard (min < i)
   succ i = UnsafeI (unwrap i + 1) <$ guard (i < max)
 
-instance (Inhabited Natural l r, PlusCtx Natural l r) => Plus Natural l r where
-  type PlusCtx Natural l r = ()
-  a `plus` b = from (unwrap a + unwrap b)
-
-instance (Inhabited Natural l r, MultCtx Natural l r) => Mult Natural l r where
-  type MultCtx Natural l r = ()
-  a `mult` b = from (unwrap a * unwrap b)
-
-instance (Inhabited Natural l r, MinusCtx Natural l r) => Minus Natural l r where
-  type MinusCtx Natural l r = ()
-  a `minus` b = from =<< toIntegralSized (toInteger (unwrap a) -
-                                          toInteger (unwrap b))
-
-instance (Inhabited Natural 0 r, ZeroCtx Natural 0 r) => Zero Natural 0 r where
-  type ZeroCtx Natural 0 r = ()
+instance (Inhabited Natural 0 r) => Zero Natural 0 r where
   zero = UnsafeI 0
 
-instance (Inhabited Natural l 'Nothing, OneCtx Natural l 'Nothing)
-  => One Natural l 'Nothing where
-  type OneCtx Natural l 'Nothing = l <= 1
+instance (Inhabited Natural l 'Nothing, l <= 1) => One Natural l 'Nothing where
   one = UnsafeI 1
 
-instance (Inhabited Natural l ('Just r), OneCtx Natural l ('Just r))
+instance (Inhabited Natural l ('Just r), l <= 1, 1 <= r)
   => One Natural l ('Just r) where
-  type OneCtx Natural l ('Just r) = (l <= 1, 1 <= r)
   one = UnsafeI 1
 

@@ -46,16 +46,24 @@ instance forall (l :: K.Integer) (r :: K.Integer).
     , r <= MaxT CPtrdiff )
   type MinI CPtrdiff l r = l
   type MaxI CPtrdiff l r = r
-  from x | K.SomeInteger (_ :: Proxy t) <- K.someIntegerVal (toInteger x) = do
-    Dict <- leInteger @l @t
-    Dict <- leInteger @t @r
-    pure (UnsafeI x)
 
 instance
   ( Interval CPtrdiff l r, InhabitedCtx CPtrdiff l r
   ) => Inhabited CPtrdiff l r where
   type InhabitedCtx CPtrdiff l r = ()
   inhabitant = min
+  from x | K.SomeInteger (_ :: Proxy t) <- K.someIntegerVal (toInteger x) = do
+    Dict <- leInteger @l @t
+    Dict <- leInteger @t @r
+    pure (UnsafeI x)
+  negate' x = from =<< toIntegralSized (P.negate (toInteger (unwrap x)))
+  recip' _ = Nothing
+  a `plus` b = from =<< toIntegralSized (toInteger (unwrap a) +
+                                         toInteger (unwrap b))
+  a `mult` b = from =<< toIntegralSized (toInteger (unwrap a) *
+                                         toInteger (unwrap b))
+  a `minus` b = from =<< toIntegralSized (toInteger (unwrap a) -
+                                          toInteger (unwrap b))
 
 instance forall t l r.
   ( Inhabited CPtrdiff l r, KnownCtx CPtrdiff t l r
@@ -71,48 +79,16 @@ instance forall l r. (Inhabited CPtrdiff l r) => With CPtrdiff l r where
         Dict <- leInteger @t @r
         pure (g pt)
 
-instance
-  ( Inhabited CPtrdiff l r, PredCtx CPtrdiff l r
-  ) => Pred CPtrdiff l r where
-  type PredCtx CPtrdiff l r = l /= r
+instance (Inhabited CPtrdiff l r, l /= r) => Discrete CPtrdiff l r where
   pred i = UnsafeI (unwrap i - 1) <$ guard (min < i)
-
-instance
-  ( Inhabited CPtrdiff l r, SuccCtx CPtrdiff l r
-  ) => Succ CPtrdiff l r where
-  type SuccCtx CPtrdiff l r = l /= r
   succ i = UnsafeI (unwrap i + 1) <$ guard (i < max)
 
-instance (Inhabited CPtrdiff l r, PlusCtx CPtrdiff l r) => Plus CPtrdiff l r where
-  type PlusCtx CPtrdiff l r = ()
-  a `plus` b = from =<< toIntegralSized (toInteger (unwrap a) +
-                                         toInteger (unwrap b))
-
-instance (Plus CPtrdiff l r, Zero CPtrdiff l r, MayNegateCtx CPtrdiff l r)
-  => MayNegate CPtrdiff l r where
-  type MayNegateCtx CPtrdiff l r = l < K.P 0
-  negate' x = from =<< toIntegralSized (P.negate (toInteger (unwrap x)))
-
-instance (MayNegate CPtrdiff l r, NegateCtx CPtrdiff l r)
-  => Negate CPtrdiff l r where
-  type NegateCtx CPtrdiff l r = l == K.Negate r
+instance (Zero CPtrdiff l r, l == K.Negate r) => Negate CPtrdiff l r where
   negate = UnsafeI . P.negate . unwrap
 
-instance (Inhabited CPtrdiff l r, MultCtx CPtrdiff l r) => Mult CPtrdiff l r where
-  type MultCtx CPtrdiff l r = ()
-  a `mult` b = from =<< toIntegralSized (toInteger (unwrap a) *
-                                         toInteger (unwrap b))
-
-instance (Inhabited CPtrdiff l r, MinusCtx CPtrdiff l r) => Minus CPtrdiff l r where
-  type MinusCtx CPtrdiff l r = ()
-  a `minus` b = from =<< toIntegralSized (toInteger (unwrap a) -
-                                          toInteger (unwrap b))
-
-instance (Inhabited CPtrdiff l r, ZeroCtx CPtrdiff l r) => Zero CPtrdiff l r where
-  type ZeroCtx CPtrdiff l r = (l <= K.P 0, K.P 0 <= r)
+instance (Inhabited CPtrdiff l r, l <= K.P 0, K.P 0 <= r) => Zero CPtrdiff l r where
   zero = UnsafeI 0
 
-instance (Inhabited CPtrdiff l r, OneCtx CPtrdiff l r) => One CPtrdiff l r where
-  type OneCtx CPtrdiff l r = (l <= K.P 1, K.P 1 <= r)
+instance (Inhabited CPtrdiff l r, l <= K.P 1, K.P 1 <= r) => One CPtrdiff l r where
   one = UnsafeI 1
 
