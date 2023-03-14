@@ -27,6 +27,8 @@ module I
  , wrap
  , clamp
  , Discrete(..)
+ , Succ(..)
+ , Pred(..)
  , One(..)
  , Zero(..)
  , Negate(..)
