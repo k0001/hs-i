@@ -248,10 +248,12 @@ class (One x l r) => Recip (x :: Type) (l :: L x) (r :: R x) where
 -- 'Nothing' if the result doesn't fit in the interval. See 'div'' too.
 div' :: forall x l r. Inhabited x l r => I x l r -> I x l r -> Maybe (I x l r)
 div' a b = mult' a =<< recip' b
+{-# INLINE div' #-}
 
 -- | @a '`div`' b@ divides @a@ by @b@.
 div :: forall x l r. (Mult x l r, Recip x l r) => I x l r -> I x l r -> I x l r
 div a b = mult a (recip b)
+{-# INLINE div #-}
 
 -- | Obtain the single element in the @'I' x l r@ interval.
 single
@@ -260,7 +262,7 @@ single
      , Known x (MinI x l r) l r )
   => I x l r
 single = inhabitant
-{-# inline single #-}
+{-# INLINE single #-}
 
 -- | Proof that @t@ is __known__ to be within @l@ and @r@ in @'I' x l r@.
 --
