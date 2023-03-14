@@ -138,27 +138,25 @@ class (Interval x l r, InhabitedCtx x l r)
   --     'fmap' 'unwrap' ('from' x)  ==  'Just' x
   -- @
   from :: x -> Maybe (I x l r)
-  -- | @a `'plus'` b@ adds @a@ and @b@.
+  -- | @a '`plus'`' b@ adds @a@ and @b@.
   --
-  -- 'Nothing' if the result would be out of the interval.
-  plus :: I x l r -> I x l r -> Maybe (I x l r)
-  -- | @a `'mult'` b@ multiplies @a@ times @b@.
+  -- 'Nothing' if the result would be out of the interval. See 'wrap', too.
+  plus' :: I x l r -> I x l r -> Maybe (I x l r)
+  -- | @a '`mult'`' b@ multiplies @a@ times @b@.
   --
-  -- 'Nothing' if the result would be out of the interval.
-  mult :: I x l r -> I x l r -> Maybe (I x l r)
-  -- | @a `'minus'` b@ substracts @b@ from @a@.
+  -- 'Nothing' if the result would be out of the interval. See 'plus', too.
+  mult' :: I x l r -> I x l r -> Maybe (I x l r)
+  -- | @a '`minus'`' b@ substracts @b@ from @a@.
   --
-  -- 'Nothing' if the result would be out of the interval.
-  minus :: I x l r -> I x l r -> Maybe (I x l r)
+  -- 'Nothing' if the result would be out of the interval. See 'mult', too.
+  minus' :: I x l r -> I x l r -> Maybe (I x l r)
   -- | @'negate'' a@ is the additive inverse of @a@.
   --
-  -- 'Nothing' if the result would be out of the interval.
-  -- See 'negate', too.
+  -- 'Nothing' if the result would be out of the interval.  See 'negate', too.
   negate' :: I x l r -> Maybe (I x l r)
   -- | @'recip'' a@ is the multiplicative inverse of @a@.
-  -- 'Nothing' if the result would be out of the interval.
   --
-  -- See 'recip', too.
+  -- 'Nothing' if the result would be out of the interval.  See 'recip', too.
   recip' :: I x l r -> Maybe (I x l r)
 
 -- | Wrap @x@ in @'I' x l r@, making sure that @x@ is within the interval
@@ -198,6 +196,21 @@ class (Inhabited x l r) => One (x :: Type) (l :: L x) (r :: R x) where
   -- | One.
   one :: I x l r
 
+-- | Intervals /fully/ supporting /addition/.
+class (Discrete x l r) => Plus (x :: Type) (l :: L x) (r :: R x) where
+  -- | @a '`plus`' b@ adds @a@ and @b@.
+  plus :: I x l r -> I x l r -> I x l r
+
+-- | Intervals /fully/ supporting /addition/.
+class (Discrete x l r) => Mult (x :: Type) (l :: L x) (r :: R x) where
+  -- | @a '`plus`' b@ multiplies @a@ times @b@.
+  mult :: I x l r -> I x l r -> I x l r
+
+-- | Intervals /fully/ supporting /subtraction/.
+class (Zero x l r) => Minus (x :: Type) (l :: L x) (r :: R x) where
+  -- | @a '`minus`' b@ substracts @b@ from @a@
+  minus :: I x l r -> I x l r -> I x l r
+
 -- | Intervals /fully/ supporting /additive inverse/.
 class (Zero x l r) => Negate (x :: Type) (l :: L x) (r :: R x) where
   -- | Additive inverse, if it fits in the interval.
@@ -230,10 +243,15 @@ class (One x l r) => Recip (x :: Type) (l :: L x) (r :: R x) where
   -- @
   recip :: I x l r -> I x l r
 
--- | @a `'div'` b@ divides @a@ by @b@.
--- 'Nothing' if the result doesn't fit in the interval.
-div :: forall x l r. Inhabited x l r => I x l r -> I x l r -> Maybe (I x l r)
-div a b = mult a =<< recip' b
+-- | @a '`div'`' b@ divides @a@ by @b@.
+--
+-- 'Nothing' if the result doesn't fit in the interval. See 'div'' too.
+div' :: forall x l r. Inhabited x l r => I x l r -> I x l r -> Maybe (I x l r)
+div' a b = mult' a =<< recip' b
+
+-- | @a '`div`' b@ divides @a@ by @b@.
+div :: forall x l r. (Mult x l r, Recip x l r) => I x l r -> I x l r -> I x l r
+div a b = mult a (recip b)
 
 -- | Obtain the single element in the @'I' x l r@ interval.
 single

@@ -57,10 +57,10 @@ instance
     pure (UnsafeI x)
   negate' _ = Nothing
   recip' _ = Nothing
-  a `plus` b = from (unwrap a + unwrap b)
-  a `mult` b = from (unwrap a * unwrap b)
-  a `minus` b = from =<< toIntegralSized (toInteger (unwrap a) -
-                                          toInteger (unwrap b))
+  a `plus'` b = from (unwrap a + unwrap b)
+  a `mult'` b = from (unwrap a * unwrap b)
+  a `minus'` b = from =<< toIntegralSized (toInteger (unwrap a) -
+                                           toInteger (unwrap b))
 
 instance
   ( Interval Natural l 'Nothing
@@ -74,11 +74,10 @@ instance
     pure (UnsafeI x)
   negate' _ = Nothing
   recip' _ = Nothing
-  a `plus` b = from (unwrap a + unwrap b)
-  a `mult` b = from (unwrap a * unwrap b)
-  a `minus` b = from =<< toIntegralSized (toInteger (unwrap a) -
-                                          toInteger (unwrap b))
-
+  a `plus'` b = pure (a `plus` b)
+  a `mult'` b = pure (a `mult` b)
+  a `minus'` b = from =<< toIntegralSized (toInteger (unwrap a) -
+                                           toInteger (unwrap b))
 
 --------------------------------------------------------------------------------
 
@@ -121,6 +120,16 @@ instance (Inhabited Natural l ('Just r), l /= r)
 instance (Inhabited Natural l 'Nothing) => Discrete Natural l 'Nothing where
   pred' i = UnsafeI (unwrap i - 1) <$ guard (min < i)
   succ' = pure . succ
+
+--------------------------------------------------------------------------------
+
+instance (Inhabited Natural l 'Nothing) => Plus Natural l 'Nothing where
+  plus a b = UnsafeI (unwrap a + unwrap b)
+
+--------------------------------------------------------------------------------
+
+instance (Inhabited Natural l 'Nothing) => Mult Natural l 'Nothing where
+  mult a b = UnsafeI (unwrap a * unwrap b)
 
 --------------------------------------------------------------------------------
 

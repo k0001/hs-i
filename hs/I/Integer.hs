@@ -58,9 +58,9 @@ instance forall l r.
     pure (UnsafeI x)
   negate' = from . P.negate . unwrap
   recip' _ = Nothing
-  a `plus` b = from (unwrap a + unwrap b)
-  a `mult` b = from (unwrap a * unwrap b)
-  a `minus` b = from (unwrap a - unwrap b)
+  a `plus'` b = from (unwrap a + unwrap b)
+  a `mult'` b = from (unwrap a * unwrap b)
+  a `minus'` b = from (unwrap a - unwrap b)
 
 instance forall l.
   ( Interval P.Integer ('Just l) 'Nothing
@@ -72,9 +72,9 @@ instance forall l.
     pure (UnsafeI x)
   negate' = from . P.negate . unwrap
   recip' _ = Nothing
-  a `plus` b = from (unwrap a + unwrap b)
-  a `mult` b = from (unwrap a * unwrap b)
-  a `minus` b = from (unwrap a - unwrap b)
+  a `plus'` b = from (unwrap a + unwrap b)
+  a `mult'` b = from (unwrap a * unwrap b)
+  a `minus'` b = from (unwrap a - unwrap b)
 
 instance forall r.
   ( Interval P.Integer 'Nothing ('Just r)
@@ -86,18 +86,18 @@ instance forall r.
     pure (UnsafeI x)
   negate' = from . P.negate . unwrap
   recip' _ = Nothing
-  a `plus` b = from (unwrap a + unwrap b)
-  a `mult` b = from (unwrap a * unwrap b)
-  a `minus` b = from (unwrap a - unwrap b)
+  a `plus'` b = from (unwrap a + unwrap b)
+  a `mult'` b = from (unwrap a * unwrap b)
+  a `minus'` b = from (unwrap a - unwrap b)
 
 instance Inhabited P.Integer 'Nothing 'Nothing where
   inhabitant = zero
   from = pure . wrap
   negate' = pure . wrap . P.negate . unwrap
   recip' _ = Nothing
-  a `plus` b = pure (wrap (unwrap a + unwrap b))
-  a `mult` b = pure (wrap (unwrap a * unwrap b))
-  a `minus` b = pure (wrap (unwrap a - unwrap b))
+  a `plus'` b = pure (a `plus` b)
+  a `mult'` b = pure (a `mult` b)
+  a `minus'` b = pure (a `minus` b)
 
 --------------------------------------------------------------------------------
 
@@ -189,6 +189,33 @@ instance (Discrete P.Integer 'Nothing r) => Pred P.Integer 'Nothing r where
 
 instance (Discrete P.Integer l 'Nothing) => Succ P.Integer l 'Nothing where
   succ i = UnsafeI (unwrap i + 1)
+
+--------------------------------------------------------------------------------
+
+instance (Inhabited P.Integer ('Just l) 'Nothing, K.P 0 <= l)
+  => Plus P.Integer (Just l) 'Nothing where
+  a `plus` b = UnsafeI (unwrap a + unwrap b)
+
+instance (Inhabited P.Integer 'Nothing ('Just r), r <= K.P 0)
+  => Plus P.Integer 'Nothing ('Just r) where
+  a `plus` b = UnsafeI (unwrap a + unwrap b)
+
+instance Plus P.Integer 'Nothing 'Nothing where
+  a `plus` b = UnsafeI (unwrap a + unwrap b)
+
+--------------------------------------------------------------------------------
+
+instance (Inhabited P.Integer ('Just l) ('Just r), K.P 0 <= l)
+  => Mult P.Integer (Just l) 'Nothing where
+  a `mult` b = UnsafeI (unwrap a * unwrap b)
+
+instance Mult P.Integer 'Nothing 'Nothing where
+  a `mult` b = UnsafeI (unwrap a + unwrap b)
+
+--------------------------------------------------------------------------------
+
+instance Minus P.Integer 'Nothing 'Nothing where
+  a `minus` b = UnsafeI (unwrap a - unwrap b)
 
 --------------------------------------------------------------------------------
 

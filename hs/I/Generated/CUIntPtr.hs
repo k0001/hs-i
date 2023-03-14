@@ -58,12 +58,12 @@ instance
     pure (UnsafeI x)
   negate' _ = Nothing
   recip' _ = Nothing
-  a `plus` b = from =<< toIntegralSized (toInteger (unwrap a) +
-                                         toInteger (unwrap b))
-  a `mult` b = from =<< toIntegralSized (toInteger (unwrap a) *
-                                         toInteger (unwrap b))
-  a `minus` b = from =<< toIntegralSized (toInteger (unwrap a) -
+  a `plus'` b = from =<< toIntegralSized (toInteger (unwrap a) +
                                           toInteger (unwrap b))
+  a `mult'` b = from =<< toIntegralSized (toInteger (unwrap a) *
+                                          toInteger (unwrap b))
+  a `minus'` b = from =<< toIntegralSized (toInteger (unwrap a) -
+                                           toInteger (unwrap b))
 
 instance forall t l r.
   ( Inhabited CUIntPtr l r, KnownCtx CUIntPtr t l r

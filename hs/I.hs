@@ -32,8 +32,12 @@ module I
  , One(..)
  , Zero(..)
  , Negate(..)
+ , Plus(..)
+ , Mult(..)
+ , Minus(..)
  , Recip(..)
  , div
+ , div'
    -- * Known interval elements
  , Known(..)
  , With(..)
