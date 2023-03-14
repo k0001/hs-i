@@ -21,6 +21,9 @@ import I.Internal
 
 --------------------------------------------------------------------------------
 
+type instance MinL Natural = MinT Natural
+type instance MaxR Natural = 'Nothing
+
 instance forall l.
   ( IntervalCtx Natural l 'Nothing
   ) => Interval Natural l 'Nothing where
