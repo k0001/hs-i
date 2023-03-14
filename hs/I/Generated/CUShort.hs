@@ -15,8 +15,7 @@ import Data.Proxy
 import Data.Word
 import Data.Type.Ord
 import Foreign.C.Types
-import GHC.TypeLits qualified as Lits
-import GHC.TypeNats (KnownNat)
+import GHC.TypeLits qualified as L
 import KindInteger (type (/=))
 import Prelude hiding (min, max, div)
 
@@ -40,15 +39,15 @@ instance forall l r.
   ( IntervalCtx CUShort l r
   ) => Interval CUShort l r where
   type IntervalCtx CUShort l r =
-    ( KnownNat l
-    , KnownNat r
+    ( L.KnownNat l
+    , L.KnownNat r
     , MinT CUShort <= l
     , l <= r
     , r <= MaxT CUShort )
   type MinBoundI CUShort l r = l
   type MaxBoundI CUShort l r = r
   from x = do
-    Lits.SomeNat (_ :: Proxy x) <- Lits.someNatVal (toInteger x)
+    L.SomeNat (_ :: Proxy x) <- L.someNatVal (toInteger x)
     Dict <- leNatural @l @x
     Dict <- leNatural @x @r
     pure (UnsafeI x)
@@ -62,12 +61,12 @@ instance
 instance forall t l r.
   ( Inhabited CUShort l r, KnownCtx CUShort t l r
   ) => Known CUShort t l r where
-  type KnownCtx CUShort t l r = (KnownNat t, l <= t, t <= r)
-  known = UnsafeI (fromInteger (Lits.natVal (Proxy @t)))
+  type KnownCtx CUShort t l r = (L.KnownNat t, l <= t, t <= r)
+  known = UnsafeI (fromInteger (L.natVal (Proxy @t)))
 
 instance forall l r. (Inhabited CUShort l r) => With CUShort l r where
   with x g = fromMaybe (error "I.with: impossible") $ do
-    Lits.SomeNat (pt :: Proxy t) <- Lits.someNatVal (toInteger (unwrap x))
+    L.SomeNat (pt :: Proxy t) <- L.someNatVal (toInteger (unwrap x))
     Dict <- leNatural @l @t
     Dict <- leNatural @t @r
     pure (g pt)
@@ -84,26 +83,18 @@ instance
   type SuccCtx CUShort l r = l /= r
   succ i = UnsafeI (unwrap i + 1) <$ guard (i < max)
 
-instance
-  ( Known CUShort t l r, Pred CUShort l r, KnownPredCtx CUShort t l r
-  ) => KnownPred CUShort t l r where
-  type KnownPredCtx CUShort t l r = t /= l
-  type Pred' CUShort t l r = t Lits.- 1
-instance
-  ( Known CUShort t l r, Succ CUShort l r, KnownSuccCtx CUShort t l r
-  ) => KnownSucc CUShort t l r where
-  type KnownSuccCtx CUShort t l r = t /= r
-  type Succ' CUShort t l r = t Lits.+ 1
-
 instance (Inhabited CUShort l r, PlusCtx CUShort l r) => Plus CUShort l r where
+  type PlusCtx CUShort l r = ()
   a `plus` b = from =<< toIntegralSized (toInteger (unwrap a) +
                                          toInteger (unwrap b))
 
 instance (Inhabited CUShort l r, MultCtx CUShort l r) => Mult CUShort l r where
+  type MultCtx CUShort l r = ()
   a `mult` b = from =<< toIntegralSized (toInteger (unwrap a) *
                                          toInteger (unwrap b))
 
 instance (Inhabited CUShort l r, MinusCtx CUShort l r) => Minus CUShort l r where
+  type MinusCtx CUShort l r = ()
   a `minus` b = from =<< toIntegralSized (toInteger (unwrap a) -
                                           toInteger (unwrap b))
 

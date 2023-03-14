@@ -82,19 +82,8 @@ instance
   type SuccCtx CLong l r = l /= r
   succ i = UnsafeI (unwrap i + 1) <$ guard (i < max)
 
-instance
-  ( Known CLong t l r, Pred CLong l r, KnownPredCtx CLong t l r
-  ) => KnownPred CLong t l r where
-  type KnownPredCtx CLong t l r = t /= l
-  type Pred' CLong t l r = t K.- K.P 1
-
-instance
-  ( Known CLong t l r, Succ CLong l r, KnownSuccCtx CLong t l r
-  ) => KnownSucc CLong t l r where
-  type KnownSuccCtx CLong t l r = t /= r
-  type Succ' CLong t l r = t K.+ K.P 1
-
 instance (Inhabited CLong l r, PlusCtx CLong l r) => Plus CLong l r where
+  type PlusCtx CLong l r = ()
   a `plus` b = from =<< toIntegralSized (toInteger (unwrap a) +
                                          toInteger (unwrap b))
 
@@ -104,10 +93,12 @@ instance (Plus CLong l r, Zero CLong l r, PlusInvCtx CLong l r)
   plusinv = UnsafeI . negate . unwrap
 
 instance (Inhabited CLong l r, MultCtx CLong l r) => Mult CLong l r where
+  type MultCtx CLong l r = ()
   a `mult` b = from =<< toIntegralSized (toInteger (unwrap a) *
                                          toInteger (unwrap b))
 
 instance (Inhabited CLong l r, MinusCtx CLong l r) => Minus CLong l r where
+  type MinusCtx CLong l r = ()
   a `minus` b = from =<< toIntegralSized (toInteger (unwrap a) -
                                           toInteger (unwrap b))
 

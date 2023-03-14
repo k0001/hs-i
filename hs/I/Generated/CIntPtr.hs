@@ -82,19 +82,8 @@ instance
   type SuccCtx CIntPtr l r = l /= r
   succ i = UnsafeI (unwrap i + 1) <$ guard (i < max)
 
-instance
-  ( Known CIntPtr t l r, Pred CIntPtr l r, KnownPredCtx CIntPtr t l r
-  ) => KnownPred CIntPtr t l r where
-  type KnownPredCtx CIntPtr t l r = t /= l
-  type Pred' CIntPtr t l r = t K.- K.P 1
-
-instance
-  ( Known CIntPtr t l r, Succ CIntPtr l r, KnownSuccCtx CIntPtr t l r
-  ) => KnownSucc CIntPtr t l r where
-  type KnownSuccCtx CIntPtr t l r = t /= r
-  type Succ' CIntPtr t l r = t K.+ K.P 1
-
 instance (Inhabited CIntPtr l r, PlusCtx CIntPtr l r) => Plus CIntPtr l r where
+  type PlusCtx CIntPtr l r = ()
   a `plus` b = from =<< toIntegralSized (toInteger (unwrap a) +
                                          toInteger (unwrap b))
 
@@ -104,10 +93,12 @@ instance (Plus CIntPtr l r, Zero CIntPtr l r, PlusInvCtx CIntPtr l r)
   plusinv = UnsafeI . negate . unwrap
 
 instance (Inhabited CIntPtr l r, MultCtx CIntPtr l r) => Mult CIntPtr l r where
+  type MultCtx CIntPtr l r = ()
   a `mult` b = from =<< toIntegralSized (toInteger (unwrap a) *
                                          toInteger (unwrap b))
 
 instance (Inhabited CIntPtr l r, MinusCtx CIntPtr l r) => Minus CIntPtr l r where
+  type MinusCtx CIntPtr l r = ()
   a `minus` b = from =<< toIntegralSized (toInteger (unwrap a) -
                                           toInteger (unwrap b))
 

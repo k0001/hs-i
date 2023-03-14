@@ -82,19 +82,8 @@ instance
   type SuccCtx Int32 l r = l /= r
   succ i = UnsafeI (unwrap i + 1) <$ guard (i < max)
 
-instance
-  ( Known Int32 t l r, Pred Int32 l r, KnownPredCtx Int32 t l r
-  ) => KnownPred Int32 t l r where
-  type KnownPredCtx Int32 t l r = t /= l
-  type Pred' Int32 t l r = t K.- K.P 1
-
-instance
-  ( Known Int32 t l r, Succ Int32 l r, KnownSuccCtx Int32 t l r
-  ) => KnownSucc Int32 t l r where
-  type KnownSuccCtx Int32 t l r = t /= r
-  type Succ' Int32 t l r = t K.+ K.P 1
-
 instance (Inhabited Int32 l r, PlusCtx Int32 l r) => Plus Int32 l r where
+  type PlusCtx Int32 l r = ()
   a `plus` b = from =<< toIntegralSized (toInteger (unwrap a) +
                                          toInteger (unwrap b))
 
@@ -104,10 +93,12 @@ instance (Plus Int32 l r, Zero Int32 l r, PlusInvCtx Int32 l r)
   plusinv = UnsafeI . negate . unwrap
 
 instance (Inhabited Int32 l r, MultCtx Int32 l r) => Mult Int32 l r where
+  type MultCtx Int32 l r = ()
   a `mult` b = from =<< toIntegralSized (toInteger (unwrap a) *
                                          toInteger (unwrap b))
 
 instance (Inhabited Int32 l r, MinusCtx Int32 l r) => Minus Int32 l r where
+  type MinusCtx Int32 l r = ()
   a `minus` b = from =<< toIntegralSized (toInteger (unwrap a) -
                                           toInteger (unwrap b))
 

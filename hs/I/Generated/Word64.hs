@@ -15,8 +15,7 @@ import Data.Proxy
 import Data.Word
 import Data.Type.Ord
 import Foreign.C.Types
-import GHC.TypeLits qualified as Lits
-import GHC.TypeNats (KnownNat)
+import GHC.TypeLits qualified as L
 import KindInteger (type (/=))
 import Prelude hiding (min, max, div)
 
@@ -40,15 +39,15 @@ instance forall l r.
   ( IntervalCtx Word64 l r
   ) => Interval Word64 l r where
   type IntervalCtx Word64 l r =
-    ( KnownNat l
-    , KnownNat r
+    ( L.KnownNat l
+    , L.KnownNat r
     , MinT Word64 <= l
     , l <= r
     , r <= MaxT Word64 )
   type MinBoundI Word64 l r = l
   type MaxBoundI Word64 l r = r
   from x = do
-    Lits.SomeNat (_ :: Proxy x) <- Lits.someNatVal (toInteger x)
+    L.SomeNat (_ :: Proxy x) <- L.someNatVal (toInteger x)
     Dict <- leNatural @l @x
     Dict <- leNatural @x @r
     pure (UnsafeI x)
@@ -62,12 +61,12 @@ instance
 instance forall t l r.
   ( Inhabited Word64 l r, KnownCtx Word64 t l r
   ) => Known Word64 t l r where
-  type KnownCtx Word64 t l r = (KnownNat t, l <= t, t <= r)
-  known = UnsafeI (fromInteger (Lits.natVal (Proxy @t)))
+  type KnownCtx Word64 t l r = (L.KnownNat t, l <= t, t <= r)
+  known = UnsafeI (fromInteger (L.natVal (Proxy @t)))
 
 instance forall l r. (Inhabited Word64 l r) => With Word64 l r where
   with x g = fromMaybe (error "I.with: impossible") $ do
-    Lits.SomeNat (pt :: Proxy t) <- Lits.someNatVal (toInteger (unwrap x))
+    L.SomeNat (pt :: Proxy t) <- L.someNatVal (toInteger (unwrap x))
     Dict <- leNatural @l @t
     Dict <- leNatural @t @r
     pure (g pt)
@@ -84,26 +83,18 @@ instance
   type SuccCtx Word64 l r = l /= r
   succ i = UnsafeI (unwrap i + 1) <$ guard (i < max)
 
-instance
-  ( Known Word64 t l r, Pred Word64 l r, KnownPredCtx Word64 t l r
-  ) => KnownPred Word64 t l r where
-  type KnownPredCtx Word64 t l r = t /= l
-  type Pred' Word64 t l r = t Lits.- 1
-instance
-  ( Known Word64 t l r, Succ Word64 l r, KnownSuccCtx Word64 t l r
-  ) => KnownSucc Word64 t l r where
-  type KnownSuccCtx Word64 t l r = t /= r
-  type Succ' Word64 t l r = t Lits.+ 1
-
 instance (Inhabited Word64 l r, PlusCtx Word64 l r) => Plus Word64 l r where
+  type PlusCtx Word64 l r = ()
   a `plus` b = from =<< toIntegralSized (toInteger (unwrap a) +
                                          toInteger (unwrap b))
 
 instance (Inhabited Word64 l r, MultCtx Word64 l r) => Mult Word64 l r where
+  type MultCtx Word64 l r = ()
   a `mult` b = from =<< toIntegralSized (toInteger (unwrap a) *
                                          toInteger (unwrap b))
 
 instance (Inhabited Word64 l r, MinusCtx Word64 l r) => Minus Word64 l r where
+  type MinusCtx Word64 l r = ()
   a `minus` b = from =<< toIntegralSized (toInteger (unwrap a) -
                                           toInteger (unwrap b))
 

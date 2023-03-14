@@ -82,19 +82,8 @@ instance
   type SuccCtx CWchar l r = l /= r
   succ i = UnsafeI (unwrap i + 1) <$ guard (i < max)
 
-instance
-  ( Known CWchar t l r, Pred CWchar l r, KnownPredCtx CWchar t l r
-  ) => KnownPred CWchar t l r where
-  type KnownPredCtx CWchar t l r = t /= l
-  type Pred' CWchar t l r = t K.- K.P 1
-
-instance
-  ( Known CWchar t l r, Succ CWchar l r, KnownSuccCtx CWchar t l r
-  ) => KnownSucc CWchar t l r where
-  type KnownSuccCtx CWchar t l r = t /= r
-  type Succ' CWchar t l r = t K.+ K.P 1
-
 instance (Inhabited CWchar l r, PlusCtx CWchar l r) => Plus CWchar l r where
+  type PlusCtx CWchar l r = ()
   a `plus` b = from =<< toIntegralSized (toInteger (unwrap a) +
                                          toInteger (unwrap b))
 
@@ -104,10 +93,12 @@ instance (Plus CWchar l r, Zero CWchar l r, PlusInvCtx CWchar l r)
   plusinv = UnsafeI . negate . unwrap
 
 instance (Inhabited CWchar l r, MultCtx CWchar l r) => Mult CWchar l r where
+  type MultCtx CWchar l r = ()
   a `mult` b = from =<< toIntegralSized (toInteger (unwrap a) *
                                          toInteger (unwrap b))
 
 instance (Inhabited CWchar l r, MinusCtx CWchar l r) => Minus CWchar l r where
+  type MinusCtx CWchar l r = ()
   a `minus` b = from =<< toIntegralSized (toInteger (unwrap a) -
                                           toInteger (unwrap b))
 

@@ -82,19 +82,8 @@ instance
   type SuccCtx CIntMax l r = l /= r
   succ i = UnsafeI (unwrap i + 1) <$ guard (i < max)
 
-instance
-  ( Known CIntMax t l r, Pred CIntMax l r, KnownPredCtx CIntMax t l r
-  ) => KnownPred CIntMax t l r where
-  type KnownPredCtx CIntMax t l r = t /= l
-  type Pred' CIntMax t l r = t K.- K.P 1
-
-instance
-  ( Known CIntMax t l r, Succ CIntMax l r, KnownSuccCtx CIntMax t l r
-  ) => KnownSucc CIntMax t l r where
-  type KnownSuccCtx CIntMax t l r = t /= r
-  type Succ' CIntMax t l r = t K.+ K.P 1
-
 instance (Inhabited CIntMax l r, PlusCtx CIntMax l r) => Plus CIntMax l r where
+  type PlusCtx CIntMax l r = ()
   a `plus` b = from =<< toIntegralSized (toInteger (unwrap a) +
                                          toInteger (unwrap b))
 
@@ -104,10 +93,12 @@ instance (Plus CIntMax l r, Zero CIntMax l r, PlusInvCtx CIntMax l r)
   plusinv = UnsafeI . negate . unwrap
 
 instance (Inhabited CIntMax l r, MultCtx CIntMax l r) => Mult CIntMax l r where
+  type MultCtx CIntMax l r = ()
   a `mult` b = from =<< toIntegralSized (toInteger (unwrap a) *
                                          toInteger (unwrap b))
 
 instance (Inhabited CIntMax l r, MinusCtx CIntMax l r) => Minus CIntMax l r where
+  type MinusCtx CIntMax l r = ()
   a `minus` b = from =<< toIntegralSized (toInteger (unwrap a) -
                                           toInteger (unwrap b))
 

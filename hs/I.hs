@@ -42,8 +42,6 @@ module I
  , min
  , max
  , single
- , KnownPred(..)
- , KnownSucc(..)
  ) where
 
 import I.Internal

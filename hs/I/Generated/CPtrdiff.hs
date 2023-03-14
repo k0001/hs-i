@@ -82,19 +82,8 @@ instance
   type SuccCtx CPtrdiff l r = l /= r
   succ i = UnsafeI (unwrap i + 1) <$ guard (i < max)
 
-instance
-  ( Known CPtrdiff t l r, Pred CPtrdiff l r, KnownPredCtx CPtrdiff t l r
-  ) => KnownPred CPtrdiff t l r where
-  type KnownPredCtx CPtrdiff t l r = t /= l
-  type Pred' CPtrdiff t l r = t K.- K.P 1
-
-instance
-  ( Known CPtrdiff t l r, Succ CPtrdiff l r, KnownSuccCtx CPtrdiff t l r
-  ) => KnownSucc CPtrdiff t l r where
-  type KnownSuccCtx CPtrdiff t l r = t /= r
-  type Succ' CPtrdiff t l r = t K.+ K.P 1
-
 instance (Inhabited CPtrdiff l r, PlusCtx CPtrdiff l r) => Plus CPtrdiff l r where
+  type PlusCtx CPtrdiff l r = ()
   a `plus` b = from =<< toIntegralSized (toInteger (unwrap a) +
                                          toInteger (unwrap b))
 
@@ -104,10 +93,12 @@ instance (Plus CPtrdiff l r, Zero CPtrdiff l r, PlusInvCtx CPtrdiff l r)
   plusinv = UnsafeI . negate . unwrap
 
 instance (Inhabited CPtrdiff l r, MultCtx CPtrdiff l r) => Mult CPtrdiff l r where
+  type MultCtx CPtrdiff l r = ()
   a `mult` b = from =<< toIntegralSized (toInteger (unwrap a) *
                                          toInteger (unwrap b))
 
 instance (Inhabited CPtrdiff l r, MinusCtx CPtrdiff l r) => Minus CPtrdiff l r where
+  type MinusCtx CPtrdiff l r = ()
   a `minus` b = from =<< toIntegralSized (toInteger (unwrap a) -
                                           toInteger (unwrap b))
 

@@ -82,19 +82,8 @@ instance
   type SuccCtx CSChar l r = l /= r
   succ i = UnsafeI (unwrap i + 1) <$ guard (i < max)
 
-instance
-  ( Known CSChar t l r, Pred CSChar l r, KnownPredCtx CSChar t l r
-  ) => KnownPred CSChar t l r where
-  type KnownPredCtx CSChar t l r = t /= l
-  type Pred' CSChar t l r = t K.- K.P 1
-
-instance
-  ( Known CSChar t l r, Succ CSChar l r, KnownSuccCtx CSChar t l r
-  ) => KnownSucc CSChar t l r where
-  type KnownSuccCtx CSChar t l r = t /= r
-  type Succ' CSChar t l r = t K.+ K.P 1
-
 instance (Inhabited CSChar l r, PlusCtx CSChar l r) => Plus CSChar l r where
+  type PlusCtx CSChar l r = ()
   a `plus` b = from =<< toIntegralSized (toInteger (unwrap a) +
                                          toInteger (unwrap b))
 
@@ -104,10 +93,12 @@ instance (Plus CSChar l r, Zero CSChar l r, PlusInvCtx CSChar l r)
   plusinv = UnsafeI . negate . unwrap
 
 instance (Inhabited CSChar l r, MultCtx CSChar l r) => Mult CSChar l r where
+  type MultCtx CSChar l r = ()
   a `mult` b = from =<< toIntegralSized (toInteger (unwrap a) *
                                          toInteger (unwrap b))
 
 instance (Inhabited CSChar l r, MinusCtx CSChar l r) => Minus CSChar l r where
+  type MinusCtx CSChar l r = ()
   a `minus` b = from =<< toIntegralSized (toInteger (unwrap a) -
                                           toInteger (unwrap b))
 

@@ -15,8 +15,7 @@ import Data.Proxy
 import Data.Word
 import Data.Type.Ord
 import Foreign.C.Types
-import GHC.TypeLits qualified as Lits
-import GHC.TypeNats (KnownNat)
+import GHC.TypeLits qualified as L
 import KindInteger (type (/=))
 import Prelude hiding (min, max, div)
 
@@ -40,15 +39,15 @@ instance forall l r.
   ( IntervalCtx CUChar l r
   ) => Interval CUChar l r where
   type IntervalCtx CUChar l r =
-    ( KnownNat l
-    , KnownNat r
+    ( L.KnownNat l
+    , L.KnownNat r
     , MinT CUChar <= l
     , l <= r
     , r <= MaxT CUChar )
   type MinBoundI CUChar l r = l
   type MaxBoundI CUChar l r = r
   from x = do
-    Lits.SomeNat (_ :: Proxy x) <- Lits.someNatVal (toInteger x)
+    L.SomeNat (_ :: Proxy x) <- L.someNatVal (toInteger x)
     Dict <- leNatural @l @x
     Dict <- leNatural @x @r
     pure (UnsafeI x)
@@ -62,12 +61,12 @@ instance
 instance forall t l r.
   ( Inhabited CUChar l r, KnownCtx CUChar t l r
   ) => Known CUChar t l r where
-  type KnownCtx CUChar t l r = (KnownNat t, l <= t, t <= r)
-  known = UnsafeI (fromInteger (Lits.natVal (Proxy @t)))
+  type KnownCtx CUChar t l r = (L.KnownNat t, l <= t, t <= r)
+  known = UnsafeI (fromInteger (L.natVal (Proxy @t)))
 
 instance forall l r. (Inhabited CUChar l r) => With CUChar l r where
   with x g = fromMaybe (error "I.with: impossible") $ do
-    Lits.SomeNat (pt :: Proxy t) <- Lits.someNatVal (toInteger (unwrap x))
+    L.SomeNat (pt :: Proxy t) <- L.someNatVal (toInteger (unwrap x))
     Dict <- leNatural @l @t
     Dict <- leNatural @t @r
     pure (g pt)
@@ -84,26 +83,18 @@ instance
   type SuccCtx CUChar l r = l /= r
   succ i = UnsafeI (unwrap i + 1) <$ guard (i < max)
 
-instance
-  ( Known CUChar t l r, Pred CUChar l r, KnownPredCtx CUChar t l r
-  ) => KnownPred CUChar t l r where
-  type KnownPredCtx CUChar t l r = t /= l
-  type Pred' CUChar t l r = t Lits.- 1
-instance
-  ( Known CUChar t l r, Succ CUChar l r, KnownSuccCtx CUChar t l r
-  ) => KnownSucc CUChar t l r where
-  type KnownSuccCtx CUChar t l r = t /= r
-  type Succ' CUChar t l r = t Lits.+ 1
-
 instance (Inhabited CUChar l r, PlusCtx CUChar l r) => Plus CUChar l r where
+  type PlusCtx CUChar l r = ()
   a `plus` b = from =<< toIntegralSized (toInteger (unwrap a) +
                                          toInteger (unwrap b))
 
 instance (Inhabited CUChar l r, MultCtx CUChar l r) => Mult CUChar l r where
+  type MultCtx CUChar l r = ()
   a `mult` b = from =<< toIntegralSized (toInteger (unwrap a) *
                                          toInteger (unwrap b))
 
 instance (Inhabited CUChar l r, MinusCtx CUChar l r) => Minus CUChar l r where
+  type MinusCtx CUChar l r = ()
   a `minus` b = from =<< toIntegralSized (toInteger (unwrap a) -
                                           toInteger (unwrap b))
 
