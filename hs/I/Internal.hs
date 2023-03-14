@@ -561,3 +561,10 @@ type instance L L.Natural = L.Natural
 -- | ''Nothing' means /unbounded/.
 type instance R L.Natural = Maybe L.Natural
 type instance MinL L.Natural = MinT L.Natural
+
+type instance T K.Integer = K.Integer
+-- | ''Nothing' means /unbounded/.
+type instance L K.Integer = Maybe K.Integer
+-- | ''Nothing' means /unbounded/.
+type instance R K.Integer = Maybe K.Integer
+
