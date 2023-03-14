@@ -44,8 +44,8 @@ instance forall l r.
     , MinT CUIntMax <= l
     , l <= r
     , r <= MaxT CUIntMax )
-  type MinBoundI CUIntMax l r = l
-  type MaxBoundI CUIntMax l r = r
+  type MinI CUIntMax l r = l
+  type MaxI CUIntMax l r = r
   from x = do
     L.SomeNat (_ :: Proxy x) <- L.someNatVal (toInteger x)
     Dict <- leNatural @l @x
@@ -98,8 +98,8 @@ instance (Inhabited CUIntMax l r, MinusCtx CUIntMax l r) => Minus CUIntMax l r w
   a `minus` b = from =<< toIntegralSized (toInteger (unwrap a) -
                                           toInteger (unwrap b))
 
-instance (Inhabited CUIntMax l r, ZeroCtx CUIntMax l r) => Zero CUIntMax l r where
-  type ZeroCtx CUIntMax l r = (l <= 0, 0 <= r)
+instance (Inhabited CUIntMax 0 r, ZeroCtx CUIntMax 0 r) => Zero CUIntMax 0 r where
+  type ZeroCtx CUIntMax 0 r = ()
   zero = UnsafeI 0
 
 instance (Inhabited CUIntMax l r, OneCtx CUIntMax l r) => One CUIntMax l r where

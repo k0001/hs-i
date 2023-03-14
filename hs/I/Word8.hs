@@ -43,8 +43,8 @@ instance forall l r.
     , MinT Word8 <= l
     , l <= r
     , r <= MaxT Word8 )
-  type MinBoundI Word8 l r = l
-  type MaxBoundI Word8 l r = r
+  type MinI Word8 l r = l
+  type MaxI Word8 l r = r
   from x = do
     L.SomeNat (_ :: Proxy x) <- L.someNatVal (toInteger x)
     Dict <- leNatural @l @x
@@ -97,8 +97,8 @@ instance (Inhabited Word8 l r, MinusCtx Word8 l r) => Minus Word8 l r where
   a `minus` b = from =<< toIntegralSized (toInteger (unwrap a) -
                                           toInteger (unwrap b))
 
-instance (Inhabited Word8 l r, ZeroCtx Word8 l r) => Zero Word8 l r where
-  type ZeroCtx Word8 l r = (l <= 0, 0 <= r)
+instance (Inhabited Word8 0 r, ZeroCtx Word8 0 r) => Zero Word8 0 r where
+  type ZeroCtx Word8 0 r = ()
   zero = UnsafeI 0
 
 instance (Inhabited Word8 l r, OneCtx Word8 l r) => One Word8 l r where

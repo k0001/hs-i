@@ -18,6 +18,7 @@ import Foreign.C.Types
 import KindInteger (type (/=), type (==))
 import KindInteger qualified as K
 import Prelude hiding (min, max, div)
+import Prelude qualified as P
 
 import I.Internal
 
@@ -43,8 +44,8 @@ instance forall (l :: K.Integer) (r :: K.Integer).
     , MinT Int <= l
     , l <= r
     , r <= MaxT Int )
-  type MinBoundI Int l r = l
-  type MaxBoundI Int l r = r
+  type MinI Int l r = l
+  type MaxI Int l r = r
   from x | K.SomeInteger (_ :: Proxy t) <- K.someIntegerVal (toInteger x) = do
     Dict <- leInteger @l @t
     Dict <- leInteger @t @r
@@ -87,10 +88,15 @@ instance (Inhabited Int l r, PlusCtx Int l r) => Plus Int l r where
   a `plus` b = from =<< toIntegralSized (toInteger (unwrap a) +
                                          toInteger (unwrap b))
 
-instance (Plus Int l r, Zero Int l r, PlusInvCtx Int l r)
-  => PlusInv Int l r where
-  type PlusInvCtx Int l r = l == K.Negate r
-  plusinv = UnsafeI . negate . unwrap
+instance (Plus Int l r, Zero Int l r, MayNegateCtx Int l r)
+  => MayNegate Int l r where
+  type MayNegateCtx Int l r = l < K.P 0
+  negate' x = from =<< toIntegralSized (P.negate (toInteger (unwrap x)))
+
+instance (MayNegate Int l r, NegateCtx Int l r)
+  => Negate Int l r where
+  type NegateCtx Int l r = l == K.Negate r
+  negate = UnsafeI . P.negate . unwrap
 
 instance (Inhabited Int l r, MultCtx Int l r) => Mult Int l r where
   type MultCtx Int l r = ()

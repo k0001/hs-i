@@ -44,8 +44,8 @@ instance forall l r.
     , MinT Word64 <= l
     , l <= r
     , r <= MaxT Word64 )
-  type MinBoundI Word64 l r = l
-  type MaxBoundI Word64 l r = r
+  type MinI Word64 l r = l
+  type MaxI Word64 l r = r
   from x = do
     L.SomeNat (_ :: Proxy x) <- L.someNatVal (toInteger x)
     Dict <- leNatural @l @x
@@ -98,8 +98,8 @@ instance (Inhabited Word64 l r, MinusCtx Word64 l r) => Minus Word64 l r where
   a `minus` b = from =<< toIntegralSized (toInteger (unwrap a) -
                                           toInteger (unwrap b))
 
-instance (Inhabited Word64 l r, ZeroCtx Word64 l r) => Zero Word64 l r where
-  type ZeroCtx Word64 l r = (l <= 0, 0 <= r)
+instance (Inhabited Word64 0 r, ZeroCtx Word64 0 r) => Zero Word64 0 r where
+  type ZeroCtx Word64 0 r = ()
   zero = UnsafeI 0
 
 instance (Inhabited Word64 l r, OneCtx Word64 l r) => One Word64 l r where

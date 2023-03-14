@@ -31,10 +31,12 @@ module I
  , One(..)
  , Zero(..)
  , Plus(..)
- , PlusInv(..)
+ , MayNegate(..)
+ , Negate(..)
  , Minus(..)
  , Mult(..)
- , MultInv(..)
+ , MayRecip(..)
+ , Recip(..)
  , div
    -- * Known interval elements
  , Known(..)

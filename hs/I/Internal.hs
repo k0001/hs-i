@@ -19,7 +19,7 @@ import Data.Type.Equality
 import Foreign.C.Types
 import GHC.TypeLits qualified as L
 import KindInteger qualified as K
-import Prelude hiding (min, max, div, pred, succ)
+import Prelude hiding (min, max, div, pred, succ, recip)
 import Unsafe.Coerce (unsafeCoerce)
 
 --------------------------------------------------------------------------------
@@ -56,20 +56,6 @@ newtype I (x :: Type) (l :: L x) (r :: R x) = UnsafeI x
 -- as it appears in @'Known' x t l r@.
 type family T (x :: Type) :: k
 
--- | The kind of @__l__@ in @'I' x l r@.
-type family L (x :: Type) :: k
-
--- | The kind of @__r__@ in @'I' x l r@.
-type family R (x :: Type) :: k
-
--- | __Min__imu __l__eft bound for @x@. All the values of type @x@ are at
--- least as @'MinL' x@ states, as required by 'wrap'.
-type family MinL (x :: Type) :: L x
-
--- | __Max__imum __r__ight bound for @x@.  All the values of type @x@ are at
--- most as @'MinR' x@ states, as required by 'wrap'.
-type family MaxR (x :: Type) :: R x
-
 -- | Type-level verison of @__'minBound'__ :: x@. If @x@ is unbounded on the
 -- left end, then it's ok to leave @'MinT' x@ undefined.
 -- If defined, it should mean the same 'MinL' does.
@@ -80,15 +66,20 @@ type family MinT (x :: Type) :: T x
 -- If defined, it should mean the same 'MaxR' does.
 type family MaxT (x :: Type) :: T x
 
--- | Minimum value of type @x@ contained in the interval @'I' x l r@, if any.
--- If @'I' x l r@ is unbounded on the right end, then it's ok to leave
--- @'MinBoundI' x l r@ undefined. If defined, it should mean the same @l@ does.
--- type family MinBoundI (x :: Type) (l :: L x) (r :: R x) :: T x
+-- | The kind of @__l__@ in @'I' x l r@.
+type family L (x :: Type) :: k
 
--- | Maximum value of type @x@ contained in the interval @'I' x l r@, if any.
--- If @'I' x l r@ is unbounded on the right end, then it's ok to leave
--- @'MaxBoundI' x l r@ undefined. If defined, it should mean the same @r@ does.
--- type family MaxBoundI (x :: Type) (l :: L x) (r :: R x) :: T x
+-- | __Min__imu __l__eft bound for @x@. All the values of type @x@ are at
+-- least as @'MinL' x@ states, as required by 'wrap'.
+type family MinL (x :: Type) :: L x
+
+-- | The kind of @__r__@ in @'I' x l r@.
+type family R (x :: Type) :: k
+
+-- | __Max__imum __r__ight bound for @x@.  All the values of type @x@ are at
+-- most as @'MinR' x@ states, as required by 'wrap'.
+type family MaxR (x :: Type) :: R x
+
 
 -- | For @'I' x l r@ to be a valid interval type, @'Interval' x l r@ needs
 -- to be satisfied.
@@ -102,12 +93,18 @@ class IntervalCtx x l r => Interval (x :: Type) (l :: L x) (r :: R x) where
   type IntervalCtx x l r :: Constraint
   -- | Minimum value of type @x@ contained in the interval @'I' x l r@, if any.
   -- If @'I' x l r@ is unbounded on the left end, then it's ok to leave
-  -- @'MinBoundI' x l r@ undefined. If defined, it should mean the same as @l@.
-  type MinBoundI x l r :: T x
+  -- @'MinI' x l r@ undefined. If defined, it should mean the same as @l@.
+  type MinI x l r :: T x
+  type MinI x l r = L.TypeError
+    ('L.Text "MinI not defined in instance ‘" 'L.:<>:
+     'L.ShowType (Interval x l r) 'L.:<>: 'L.Text "’")
   -- | Maximum value of type @x@ contained in the interval @'I' x l r@, if any.
   -- If @'I' x l r@ is unbounded on the right end, then it's ok to leave
-  -- @'MaxBoundI' x l r@ undefined. If defined, it should mean the same as @r@.
-  type MaxBoundI x l r :: T x
+  -- @'MaxI' x l r@ undefined. If defined, it should mean the same as @r@.
+  type MaxI x l r :: T x
+  type MaxI x l r = L.TypeError
+    ('L.Text "MaxI not defined in instance ‘" 'L.:<>:
+     'L.ShowType (Interval x l r) 'L.:<>: 'L.Text "’")
   -- | Wrap the @x@ value in the interval @'I' x l r@, if it fits.
   --
   -- * Consider using 'wrap' if the interval includes all values of type @x@.
@@ -141,12 +138,12 @@ class (Interval x l r, InhabitedCtx x l r)
   inhabitant :: I x l r
 
 -- | Wrap @x@ in @'I' x l r@, making sure that @x@ is within the interval
--- ends by clamping it to @'MinBoundI' x l r@ if less than @l@, or to
--- @'MaxBoundI' x l r@ if more than @r@.
+-- ends by clamping it to @'MinI' x l r@ if less than @l@, or to
+-- @'MaxI' x l r@ if more than @r@.
 clamp
   :: forall x l r
-  .  ( Known x (MinBoundI x l r) l r
-     , Known x (MaxBoundI x l r) l r
+  .  ( Known x (MinI x l r) l r
+     , Known x (MaxI x l r) l r
      , Ord x )
   => x
   -> I x l r
@@ -206,32 +203,44 @@ class (Inhabited x l r, OneCtx x l r)
   -- | One.
   one :: I x l r
 
--- | Intervals supporting /additive inverse/.
-class (Plus x l r, Zero x l r, Minus x l r, PlusInvCtx x l r)
-  => PlusInv (x :: Type) (l :: L x) (r :: R x) where
-  type PlusInvCtx x l r :: Constraint
+-- | Intervals /maybe/ supporting /additive inverse/.
+class (Plus x l r, Zero x l r, Minus x l r, MayNegateCtx x l r)
+  => MayNegate (x :: Type) (l :: L x) (r :: R x) where
+  type MayNegateCtx x l r :: Constraint
   -- | Additive inverse, if it fits in the interval.
-  plusinv :: I x l r -> I x l r
+  negate' :: I x l r -> Maybe (I x l r)
 
--- | Intervals supporting /multiplicative inverse/.
-class (Mult x l r, One x l r, MultInvCtx x l r)
-  => MultInv (x :: Type) (l :: L x) (r :: R x) where
-  type MultInvCtx x l r :: Constraint
+-- | Intervals /fully/ supporting /additive inverse/.
+class (MayNegate x l r, NegateCtx x l r)
+  => Negate (x :: Type) (l :: L x) (r :: R x) where
+  type NegateCtx x l r :: Constraint
+  -- | Additive inverse, if it fits in the interval.
+  negate :: I x l r -> I x l r
+
+-- | Intervals /maybe/ supporting /multiplicative inverse/.
+class (Mult x l r, One x l r, MayRecipCtx x l r)
+  => MayRecip (x :: Type) (l :: L x) (r :: R x) where
+  type MayRecipCtx x l r :: Constraint
   -- | Multiplicative inverse, if it fits in the interval.
-  multinv :: I x l r -> I x l r
-  -- default multinv :: (Real x, Fractional x) => I x l r -> Maybe (I x l r)
-  -- multinv = from . fromRational . recip . toRational . unwrap
+  recip' :: I x l r -> I x l r
+
+-- | Intervals /fully/ supporting /multiplicative inverse/.
+class (MayRecip x l r, RecipCtx x l r)
+  => Recip (x :: Type) (l :: L x) (r :: R x) where
+  type RecipCtx x l r :: Constraint
+  -- | Multiplicative inverse, if it fits in the interval.
+  recip :: I x l r -> I x l r
 
 -- | @a `'div'` b@ divides @a@ by @b@. 'Nothing' if the result doesn't fit in
 -- the interval.
-div :: forall x l r. MultInv x l r => I x l r -> I x l r -> Maybe (I x l r)
-div a b = mult a (multinv b)
+div :: forall x l r. Recip x l r => I x l r -> I x l r -> Maybe (I x l r)
+div a b = mult a (recip b)
 
 -- | Obtain the single element in the @'I' x l r@ interval.
 single
   :: forall x l r
-  .  ( MinBoundI x l r ~ MaxBoundI x l r
-     , Known x (MinBoundI x l r) l r )
+  .  ( MinI x l r ~ MaxI x l r
+     , Known x (MinI x l r) l r )
   => I x l r
 single = inhabitant
 {-# inline single #-}
@@ -348,13 +357,13 @@ unwrap :: forall x l r. I x l r -> x
 unwrap = coerce
 {-# INLINE unwrap #-}
 
--- | Minimum value in the interval, if @'MinBoundI' x@ is defined.
-min :: forall x l r. Known x (MinBoundI x l r) l r => I x l r
-min = known @_ @(MinBoundI x l r)
+-- | Minimum value in the interval, if @'MinI' x@ is defined.
+min :: forall x l r. Known x (MinI x l r) l r => I x l r
+min = known @_ @(MinI x l r)
 
--- | Maximum value in the interval, if @'MaxBoundI' x@ is defined.
-max :: forall x l r. Known x (MaxBoundI x l r) l r => I x l r
-max = known @_ @(MaxBoundI x l r)
+-- | Maximum value in the interval, if @'MaxI' x@ is defined.
+max :: forall x l r. Known x (MaxI x l r) l r => I x l r
+max = known @_ @(MaxI x l r)
 
 --------------------------------------------------------------------------------
 
@@ -569,3 +578,9 @@ type instance R CWchar = R HTYPE_WCHAR_T
 type instance MinT CWchar = MinT HTYPE_WCHAR_T
 type instance MaxT CWchar = MaxT HTYPE_WCHAR_T
 
+type instance T L.Natural = L.Natural
+type instance MinT L.Natural = 0
+type instance L L.Natural = L.Natural
+-- | ''Nothing' means /unbounded/.
+type instance R L.Natural = Maybe L.Natural
+type instance MinL L.Natural = MinT L.Natural
