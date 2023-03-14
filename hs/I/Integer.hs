@@ -13,7 +13,7 @@ import Data.Proxy
 import Data.Type.Ord
 import KindInteger qualified as K
 import KindInteger (type (/=))
-import Prelude hiding (min, max, div)
+import Prelude hiding (min, max, div, succ, pred)
 import Prelude qualified as P
 
 import I.Internal
@@ -43,10 +43,7 @@ instance forall r.
   type IntervalCtx P.Integer 'Nothing ('Just r) = K.KnownInteger r
   type MaxI P.Integer 'Nothing ('Just r) = r
 
-instance
-  ( IntervalCtx P.Integer 'Nothing 'Nothing
-  ) => Interval P.Integer 'Nothing 'Nothing where
-  type IntervalCtx P.Integer 'Nothing 'Nothing = ()
+instance Interval P.Integer 'Nothing 'Nothing
 
 --------------------------------------------------------------------------------
 
@@ -54,7 +51,6 @@ instance forall l r.
   ( Interval P.Integer ('Just l) ('Just r)
   , InhabitedCtx P.Integer ('Just l) ('Just r)
   ) => Inhabited P.Integer ('Just l) ('Just r) where
-  type InhabitedCtx P.Integer ('Just l) ('Just r) = ()
   inhabitant = min
   from x | K.SomeInteger (_ :: Proxy x) <- K.someIntegerVal x = do
     Dict <- leInteger @l @x
@@ -70,7 +66,6 @@ instance forall l.
   ( Interval P.Integer ('Just l) 'Nothing
   , InhabitedCtx P.Integer ('Just l) 'Nothing
   ) => Inhabited P.Integer ('Just l) 'Nothing where
-  type InhabitedCtx P.Integer ('Just l) 'Nothing = ()
   inhabitant = min
   from x | K.SomeInteger (_ :: Proxy x) <- K.someIntegerVal x = do
     Dict <- leInteger @l @x
@@ -85,7 +80,6 @@ instance forall r.
   ( Interval P.Integer 'Nothing ('Just r)
   , InhabitedCtx P.Integer 'Nothing ('Just r)
   ) => Inhabited P.Integer 'Nothing ('Just r) where
-  type InhabitedCtx P.Integer 'Nothing ('Just r) = ()
   inhabitant = max
   from x | K.SomeInteger (_ :: Proxy x) <- K.someIntegerVal x = do
     Dict <- leInteger @x @r
@@ -96,11 +90,7 @@ instance forall r.
   a `mult` b = from (unwrap a * unwrap b)
   a `minus` b = from (unwrap a - unwrap b)
 
-instance
-  ( Interval P.Integer 'Nothing 'Nothing
-  , InhabitedCtx P.Integer 'Nothing 'Nothing
-  ) => Inhabited P.Integer 'Nothing 'Nothing where
-  type InhabitedCtx P.Integer 'Nothing 'Nothing = ()
+instance Inhabited P.Integer 'Nothing 'Nothing where
   inhabitant = zero
   from = pure . wrap
   negate' = pure . wrap . P.negate . unwrap
@@ -134,8 +124,7 @@ instance forall t r.
   known = UnsafeI (K.integerVal (Proxy @t))
 
 instance forall t.
-  ( Inhabited P.Integer 'Nothing 'Nothing
-  , KnownCtx P.Integer t 'Nothing 'Nothing
+  ( KnownCtx P.Integer t 'Nothing 'Nothing
   ) => Known P.Integer t 'Nothing 'Nothing where
   type KnownCtx P.Integer t 'Nothing 'Nothing = K.KnownInteger t
   known = UnsafeI (K.integerVal (Proxy @t))
@@ -167,32 +156,39 @@ instance forall r.
       Dict <- leInteger @t @r
       pure (g pt)
 
-instance
-  ( Inhabited P.Integer 'Nothing 'Nothing
-  ) => With P.Integer 'Nothing 'Nothing where
+instance With P.Integer 'Nothing 'Nothing where
   with x g | K.SomeInteger (pt :: Proxy t) <- K.someIntegerVal (unwrap x) = g pt
 
 --------------------------------------------------------------------------------
 
 instance (Inhabited P.Integer ('Just l) ('Just r), l /= r)
   => Discrete P.Integer ('Just l) ('Just r) where
-  pred i = UnsafeI (unwrap i - 1) <$ guard (min < i)
-  succ i = UnsafeI (unwrap i + 1) <$ guard (i < max)
+  pred' i = UnsafeI (unwrap i - 1) <$ guard (min < i)
+  succ' i = UnsafeI (unwrap i + 1) <$ guard (i < max)
 
 instance (Inhabited P.Integer ('Just l) 'Nothing)
   => Discrete P.Integer ('Just l) 'Nothing where
-  pred i = UnsafeI (unwrap i - 1) <$ guard (min < i)
-  succ i = pure (UnsafeI (unwrap i + 1))
+  pred' i = UnsafeI (unwrap i - 1) <$ guard (min < i)
+  succ' = pure . succ
 
 instance (Inhabited P.Integer 'Nothing ('Just r))
   => Discrete P.Integer 'Nothing ('Just r) where
-  pred i = pure (UnsafeI (unwrap i - 1))
-  succ i = UnsafeI (unwrap i + 1) <$ guard (i < max)
+  pred' = pure . pred
+  succ' i = UnsafeI (unwrap i + 1) <$ guard (i < max)
 
-instance (Inhabited P.Integer 'Nothing 'Nothing)
-  => Discrete P.Integer 'Nothing 'Nothing where
-  pred i = pure (UnsafeI (unwrap i - 1))
-  succ i = pure (UnsafeI (unwrap i + 1))
+instance Discrete P.Integer 'Nothing 'Nothing where
+  pred'  = pure . pred
+  succ'  = pure . succ
+
+--------------------------------------------------------------------------------
+
+instance (Discrete P.Integer 'Nothing r) => Pred P.Integer 'Nothing r where
+  pred i = UnsafeI (unwrap i - 1)
+
+--------------------------------------------------------------------------------
+
+instance (Discrete P.Integer l 'Nothing) => Succ P.Integer l 'Nothing where
+  succ i = UnsafeI (unwrap i + 1)
 
 --------------------------------------------------------------------------------
 
@@ -208,8 +204,7 @@ instance (Inhabited P.Integer 'Nothing ('Just r), K.P 0 <= r)
   => Zero P.Integer 'Nothing ('Just r) where
   zero = UnsafeI 0
 
-instance (Inhabited P.Integer 'Nothing 'Nothing)
-  => Zero P.Integer 'Nothing 'Nothing where
+instance Zero P.Integer 'Nothing 'Nothing where
   zero = UnsafeI 0
 
 --------------------------------------------------------------------------------
@@ -226,6 +221,15 @@ instance (Inhabited P.Integer 'Nothing ('Just r), K.P 1 <= r)
   => One P.Integer 'Nothing ('Just r) where
   one = UnsafeI 1
 
-instance (Inhabited P.Integer 'Nothing 'Nothing)
-  => One P.Integer 'Nothing 'Nothing where
+instance One P.Integer 'Nothing 'Nothing where
   one = UnsafeI 1
+
+--------------------------------------------------------------------------------
+
+instance (Zero P.Integer ('Just l) ('Just r), l K.== K.Negate r)
+  => Negate P.Integer ('Just l) ('Just r) where
+  negate = UnsafeI . P.negate . unwrap
+
+instance Negate P.Integer 'Nothing 'Nothing where
+  negate = UnsafeI . P.negate . unwrap
+

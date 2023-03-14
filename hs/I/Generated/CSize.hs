@@ -50,7 +50,6 @@ instance forall l r.
 instance
   ( Interval CSize l r, InhabitedCtx CSize l r
   ) => Inhabited CSize l r where
-  type InhabitedCtx CSize l r = ()
   inhabitant = min
   from x = do
     L.SomeNat (_ :: Proxy x) <- L.someNatVal (toInteger x)
@@ -82,8 +81,8 @@ instance forall l r. (Inhabited CSize l r) => With CSize l r where
 instance
   ( Inhabited CSize l r, l /= r
   ) => Discrete CSize l r where
-  pred i = UnsafeI (unwrap i - 1) <$ guard (min < i)
-  succ i = UnsafeI (unwrap i + 1) <$ guard (i < max)
+  pred' i = UnsafeI (unwrap i - 1) <$ guard (min < i)
+  succ' i = UnsafeI (unwrap i + 1) <$ guard (i < max)
 
 instance (Inhabited CSize 0 r) => Zero CSize 0 r where
   zero = UnsafeI 0

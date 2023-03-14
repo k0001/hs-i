@@ -50,7 +50,6 @@ instance forall l r.
 instance
   ( Interval Word l r, InhabitedCtx Word l r
   ) => Inhabited Word l r where
-  type InhabitedCtx Word l r = ()
   inhabitant = min
   from x = do
     L.SomeNat (_ :: Proxy x) <- L.someNatVal (toInteger x)
@@ -82,8 +81,8 @@ instance forall l r. (Inhabited Word l r) => With Word l r where
 instance
   ( Inhabited Word l r, l /= r
   ) => Discrete Word l r where
-  pred i = UnsafeI (unwrap i - 1) <$ guard (min < i)
-  succ i = UnsafeI (unwrap i + 1) <$ guard (i < max)
+  pred' i = UnsafeI (unwrap i - 1) <$ guard (min < i)
+  succ' i = UnsafeI (unwrap i + 1) <$ guard (i < max)
 
 instance (Inhabited Word 0 r) => Zero Word 0 r where
   zero = UnsafeI 0

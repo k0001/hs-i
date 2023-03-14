@@ -50,7 +50,6 @@ instance forall l r.
 instance
   ( Interval CULLong l r, InhabitedCtx CULLong l r
   ) => Inhabited CULLong l r where
-  type InhabitedCtx CULLong l r = ()
   inhabitant = min
   from x = do
     L.SomeNat (_ :: Proxy x) <- L.someNatVal (toInteger x)
@@ -82,8 +81,8 @@ instance forall l r. (Inhabited CULLong l r) => With CULLong l r where
 instance
   ( Inhabited CULLong l r, l /= r
   ) => Discrete CULLong l r where
-  pred i = UnsafeI (unwrap i - 1) <$ guard (min < i)
-  succ i = UnsafeI (unwrap i + 1) <$ guard (i < max)
+  pred' i = UnsafeI (unwrap i - 1) <$ guard (min < i)
+  succ' i = UnsafeI (unwrap i + 1) <$ guard (i < max)
 
 instance (Inhabited CULLong 0 r) => Zero CULLong 0 r where
   zero = UnsafeI 0

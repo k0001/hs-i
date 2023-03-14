@@ -50,7 +50,6 @@ instance forall l r.
 instance
   ( Interval Word64 l r, InhabitedCtx Word64 l r
   ) => Inhabited Word64 l r where
-  type InhabitedCtx Word64 l r = ()
   inhabitant = min
   from x = do
     L.SomeNat (_ :: Proxy x) <- L.someNatVal (toInteger x)
@@ -82,8 +81,8 @@ instance forall l r. (Inhabited Word64 l r) => With Word64 l r where
 instance
   ( Inhabited Word64 l r, l /= r
   ) => Discrete Word64 l r where
-  pred i = UnsafeI (unwrap i - 1) <$ guard (min < i)
-  succ i = UnsafeI (unwrap i + 1) <$ guard (i < max)
+  pred' i = UnsafeI (unwrap i - 1) <$ guard (min < i)
+  succ' i = UnsafeI (unwrap i + 1) <$ guard (i < max)
 
 instance (Inhabited Word64 0 r) => Zero Word64 0 r where
   zero = UnsafeI 0

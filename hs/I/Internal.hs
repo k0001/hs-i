@@ -91,6 +91,7 @@ type family MaxR (x :: Type) :: R x
 class IntervalCtx x l r => Interval (x :: Type) (l :: L x) (r :: R x) where
   -- | Constraints to be satisfied for @'I' x l r@ to be a valid interval type.
   type IntervalCtx x l r :: Constraint
+  type IntervalCtx x l r = ()
   -- | Minimum value of type @x@ contained in the interval @'I' x l r@, if any.
   -- If @'I' x l r@ is unbounded on the left end, then it's ok to leave
   -- @'MinI' x l r@ undefined. If defined, it should mean the same as @l@.
@@ -116,6 +117,7 @@ class (Interval x l r, InhabitedCtx x l r)
   => Inhabited (x :: Type) (l :: L x) (r :: R x) where
   -- | Constraints to be satisfied for @'I' x l r@ to be a inhabited.
   type InhabitedCtx x l r :: Constraint
+  type InhabitedCtx x l r = ()
   -- | Proof that there is at least one element in the @'I' x l r@ interval.
   --
   -- No guarantees are made about the value of 'inhabitant' other than the
@@ -136,20 +138,26 @@ class (Interval x l r, InhabitedCtx x l r)
   --     'fmap' 'unwrap' ('from' x)  ==  'Just' x
   -- @
   from :: x -> Maybe (I x l r)
-  -- | @a `'plus'` b@ adds @a@ and @b@
+  -- | @a `'plus'` b@ adds @a@ and @b@.
+  --
   -- 'Nothing' if the result would be out of the interval.
   plus :: I x l r -> I x l r -> Maybe (I x l r)
+  -- | @a `'mult'` b@ multiplies @a@ times @b@.
+  --
   -- 'Nothing' if the result would be out of the interval.
   mult :: I x l r -> I x l r -> Maybe (I x l r)
   -- | @a `'minus'` b@ substracts @b@ from @a@.
+  --
   -- 'Nothing' if the result would be out of the interval.
   minus :: I x l r -> I x l r -> Maybe (I x l r)
   -- | @'negate'' a@ is the additive inverse of @a@.
+  --
   -- 'Nothing' if the result would be out of the interval.
   -- See 'negate', too.
   negate' :: I x l r -> Maybe (I x l r)
   -- | @'recip'' a@ is the multiplicative inverse of @a@.
   -- 'Nothing' if the result would be out of the interval.
+  --
   -- See 'recip', too.
   recip' :: I x l r -> Maybe (I x l r)
 
@@ -172,9 +180,13 @@ class
   ( Inhabited x l r
   ) => Discrete (x :: Type) (l :: L x) (r :: R x) where
   -- | __Pred__ecessor. That is, the previous /discrete/ value in the interval.
-  pred :: I x l r -> Maybe (I x l r)
+  --
+  -- 'Nothing' if the result would be out of the interval. See 'pred' too.
+  pred' :: I x l r -> Maybe (I x l r)
   -- | __Succ__essor. That is, the next /discrete/ value in the interval.
-  succ :: I x l r -> Maybe (I x l r)
+  --
+  -- 'Nothing' if the result would be out of the interval. See 'succ' too.
+  succ' :: I x l r -> Maybe (I x l r)
 
 -- | Intervals supporting /zero/.
 class (Inhabited x l r) => Zero (x :: Type) (l :: L x) (r :: R x) where
@@ -196,6 +208,16 @@ class (Zero x l r) => Negate (x :: Type) (l :: L x) (r :: R x) where
   --     'Just' ('negate' a)  = 'negate'' a
   -- @
   negate :: I x l r -> I x l r
+
+-- | Intervals /fully/ supporting /predecessor/.
+class (Discrete x l r) => Pred (x :: Type) (l :: L x) (r :: R x) where
+  -- | __Pred__ecessor. That is, the previous /discrete/ value in the interval.
+  pred :: I x l r -> I x l r
+
+-- | Intervals /fully/ supporting /successor/.
+class (Discrete x l r) => Succ (x :: Type) (l :: L x) (r :: R x) where
+  -- | __Succ__essor. That is, the next /discrete/ value in the interval.
+  succ :: I x l r -> I x l r
 
 -- | Intervals /fully/ supporting /multiplicative inverse/.
 class (One x l r) => Recip (x :: Type) (l :: L x) (r :: R x) where
@@ -234,6 +256,7 @@ class
   -- | Constraints to be satisfied by @t@ if it is known to be within
   -- the @'I' x l r@ interval.
   type KnownCtx x t l r :: Constraint
+  type KnownCtx x t l r = ()
   -- | Obtain a term-level representation of @t@ as @'I' x l r@.
   --
   -- The type-parameters to 'known' are expected to be applied

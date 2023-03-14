@@ -50,7 +50,6 @@ instance forall (l :: K.Integer) (r :: K.Integer).
 instance
   ( Interval Int l r, InhabitedCtx Int l r
   ) => Inhabited Int l r where
-  type InhabitedCtx Int l r = ()
   inhabitant = min
   from x | K.SomeInteger (_ :: Proxy t) <- K.someIntegerVal (toInteger x) = do
     Dict <- leInteger @l @t
@@ -80,8 +79,8 @@ instance forall l r. (Inhabited Int l r) => With Int l r where
         pure (g pt)
 
 instance (Inhabited Int l r, l /= r) => Discrete Int l r where
-  pred i = UnsafeI (unwrap i - 1) <$ guard (min < i)
-  succ i = UnsafeI (unwrap i + 1) <$ guard (i < max)
+  pred' i = UnsafeI (unwrap i - 1) <$ guard (min < i)
+  succ' i = UnsafeI (unwrap i + 1) <$ guard (i < max)
 
 instance (Zero Int l r, l == K.Negate r) => Negate Int l r where
   negate = UnsafeI . P.negate . unwrap

@@ -50,7 +50,6 @@ instance forall l r.
 instance
   ( Interval CUInt l r, InhabitedCtx CUInt l r
   ) => Inhabited CUInt l r where
-  type InhabitedCtx CUInt l r = ()
   inhabitant = min
   from x = do
     L.SomeNat (_ :: Proxy x) <- L.someNatVal (toInteger x)
@@ -82,8 +81,8 @@ instance forall l r. (Inhabited CUInt l r) => With CUInt l r where
 instance
   ( Inhabited CUInt l r, l /= r
   ) => Discrete CUInt l r where
-  pred i = UnsafeI (unwrap i - 1) <$ guard (min < i)
-  succ i = UnsafeI (unwrap i + 1) <$ guard (i < max)
+  pred' i = UnsafeI (unwrap i - 1) <$ guard (min < i)
+  succ' i = UnsafeI (unwrap i + 1) <$ guard (i < max)
 
 instance (Inhabited CUInt 0 r) => Zero CUInt 0 r where
   zero = UnsafeI 0
