@@ -8,6 +8,7 @@
 module I.Generated.CUInt () where
 
 import Control.Monad
+import Data.Bits
 import Data.Constraint
 import Data.Maybe
 import Data.Proxy
@@ -94,12 +95,22 @@ instance
   type KnownSuccCtx CUInt t l r = t /= r
   type Succ' CUInt t l r = t Lits.+ 1
 
-instance (Inhabited CUInt l r, PlusCtx CUInt l r) => Plus CUInt l r
-instance (Inhabited CUInt l r, MultCtx CUInt l r) => Mult CUInt l r
-instance (Inhabited CUInt l r, MinusCtx CUInt l r) => Minus CUInt l r
+instance (Inhabited CUInt l r, PlusCtx CUInt l r) => Plus CUInt l r where
+  a `plus` b = from =<< toIntegralSized (toInteger (unwrap a) +
+                                         toInteger (unwrap b))
+
+instance (Inhabited CUInt l r, MultCtx CUInt l r) => Mult CUInt l r where
+  a `mult` b = from =<< toIntegralSized (toInteger (unwrap a) *
+                                         toInteger (unwrap b))
+
+instance (Inhabited CUInt l r, MinusCtx CUInt l r) => Minus CUInt l r where
+  a `minus` b = from =<< toIntegralSized (toInteger (unwrap a) -
+                                          toInteger (unwrap b))
+
 instance (Inhabited CUInt l r, ZeroCtx CUInt l r) => Zero CUInt l r where
   type ZeroCtx CUInt l r = (l <= 0, 0 <= r)
   zero = UnsafeI 0
+
 instance (Inhabited CUInt l r, OneCtx CUInt l r) => One CUInt l r where
   type OneCtx CUInt l r = (l <= 1, 1 <= r)
   one = UnsafeI 1

@@ -8,6 +8,7 @@
 module I.Generated.CUIntPtr () where
 
 import Control.Monad
+import Data.Bits
 import Data.Constraint
 import Data.Maybe
 import Data.Proxy
@@ -94,12 +95,22 @@ instance
   type KnownSuccCtx CUIntPtr t l r = t /= r
   type Succ' CUIntPtr t l r = t Lits.+ 1
 
-instance (Inhabited CUIntPtr l r, PlusCtx CUIntPtr l r) => Plus CUIntPtr l r
-instance (Inhabited CUIntPtr l r, MultCtx CUIntPtr l r) => Mult CUIntPtr l r
-instance (Inhabited CUIntPtr l r, MinusCtx CUIntPtr l r) => Minus CUIntPtr l r
+instance (Inhabited CUIntPtr l r, PlusCtx CUIntPtr l r) => Plus CUIntPtr l r where
+  a `plus` b = from =<< toIntegralSized (toInteger (unwrap a) +
+                                         toInteger (unwrap b))
+
+instance (Inhabited CUIntPtr l r, MultCtx CUIntPtr l r) => Mult CUIntPtr l r where
+  a `mult` b = from =<< toIntegralSized (toInteger (unwrap a) *
+                                         toInteger (unwrap b))
+
+instance (Inhabited CUIntPtr l r, MinusCtx CUIntPtr l r) => Minus CUIntPtr l r where
+  a `minus` b = from =<< toIntegralSized (toInteger (unwrap a) -
+                                          toInteger (unwrap b))
+
 instance (Inhabited CUIntPtr l r, ZeroCtx CUIntPtr l r) => Zero CUIntPtr l r where
   type ZeroCtx CUIntPtr l r = (l <= 0, 0 <= r)
   zero = UnsafeI 0
+
 instance (Inhabited CUIntPtr l r, OneCtx CUIntPtr l r) => One CUIntPtr l r where
   type OneCtx CUIntPtr l r = (l <= 1, 1 <= r)
   one = UnsafeI 1

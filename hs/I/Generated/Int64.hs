@@ -8,13 +8,14 @@
 module I.Generated.Int64 () where
 
 import Control.Monad
+import Data.Bits
 import Data.Constraint
 import Data.Int
 import Data.Maybe
 import Data.Proxy
 import Data.Type.Ord
 import Foreign.C.Types
-import KindInteger (type (/=))
+import KindInteger (type (/=), type (==))
 import KindInteger qualified as K
 import Prelude hiding (min, max, div)
 
@@ -86,20 +87,34 @@ instance
   ) => KnownPred Int64 t l r where
   type KnownPredCtx Int64 t l r = t /= l
   type Pred' Int64 t l r = t K.- K.P 1
+
 instance
   ( Known Int64 t l r, Succ Int64 l r, KnownSuccCtx Int64 t l r
   ) => KnownSucc Int64 t l r where
   type KnownSuccCtx Int64 t l r = t /= r
   type Succ' Int64 t l r = t K.+ K.P 1
 
-instance (Inhabited Int64 l r, PlusCtx Int64 l r) => Plus Int64 l r
+instance (Inhabited Int64 l r, PlusCtx Int64 l r) => Plus Int64 l r where
+  a `plus` b = from =<< toIntegralSized (toInteger (unwrap a) +
+                                         toInteger (unwrap b))
+
 instance (Plus Int64 l r, Zero Int64 l r, PlusInvCtx Int64 l r)
-  => PlusInv Int64 l r
-instance (Inhabited Int64 l r, MultCtx Int64 l r) => Mult Int64 l r
-instance (Inhabited Int64 l r, MinusCtx Int64 l r) => Minus Int64 l r
+  => PlusInv Int64 l r where
+  type PlusInvCtx Int64 l r = l == K.Negate r
+  plusinv = UnsafeI . negate . unwrap
+
+instance (Inhabited Int64 l r, MultCtx Int64 l r) => Mult Int64 l r where
+  a `mult` b = from =<< toIntegralSized (toInteger (unwrap a) *
+                                         toInteger (unwrap b))
+
+instance (Inhabited Int64 l r, MinusCtx Int64 l r) => Minus Int64 l r where
+  a `minus` b = from =<< toIntegralSized (toInteger (unwrap a) -
+                                          toInteger (unwrap b))
+
 instance (Inhabited Int64 l r, ZeroCtx Int64 l r) => Zero Int64 l r where
   type ZeroCtx Int64 l r = (l <= K.P 0, K.P 0 <= r)
   zero = UnsafeI 0
+
 instance (Inhabited Int64 l r, OneCtx Int64 l r) => One Int64 l r where
   type OneCtx Int64 l r = (l <= K.P 1, K.P 1 <= r)
   one = UnsafeI 1

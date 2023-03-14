@@ -8,6 +8,7 @@
 module I.Generated.CUIntMax () where
 
 import Control.Monad
+import Data.Bits
 import Data.Constraint
 import Data.Maybe
 import Data.Proxy
@@ -94,12 +95,22 @@ instance
   type KnownSuccCtx CUIntMax t l r = t /= r
   type Succ' CUIntMax t l r = t Lits.+ 1
 
-instance (Inhabited CUIntMax l r, PlusCtx CUIntMax l r) => Plus CUIntMax l r
-instance (Inhabited CUIntMax l r, MultCtx CUIntMax l r) => Mult CUIntMax l r
-instance (Inhabited CUIntMax l r, MinusCtx CUIntMax l r) => Minus CUIntMax l r
+instance (Inhabited CUIntMax l r, PlusCtx CUIntMax l r) => Plus CUIntMax l r where
+  a `plus` b = from =<< toIntegralSized (toInteger (unwrap a) +
+                                         toInteger (unwrap b))
+
+instance (Inhabited CUIntMax l r, MultCtx CUIntMax l r) => Mult CUIntMax l r where
+  a `mult` b = from =<< toIntegralSized (toInteger (unwrap a) *
+                                         toInteger (unwrap b))
+
+instance (Inhabited CUIntMax l r, MinusCtx CUIntMax l r) => Minus CUIntMax l r where
+  a `minus` b = from =<< toIntegralSized (toInteger (unwrap a) -
+                                          toInteger (unwrap b))
+
 instance (Inhabited CUIntMax l r, ZeroCtx CUIntMax l r) => Zero CUIntMax l r where
   type ZeroCtx CUIntMax l r = (l <= 0, 0 <= r)
   zero = UnsafeI 0
+
 instance (Inhabited CUIntMax l r, OneCtx CUIntMax l r) => One CUIntMax l r where
   type OneCtx CUIntMax l r = (l <= 1, 1 <= r)
   one = UnsafeI 1

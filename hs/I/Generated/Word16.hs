@@ -8,6 +8,7 @@
 module I.Generated.Word16 () where
 
 import Control.Monad
+import Data.Bits
 import Data.Constraint
 import Data.Maybe
 import Data.Proxy
@@ -94,12 +95,22 @@ instance
   type KnownSuccCtx Word16 t l r = t /= r
   type Succ' Word16 t l r = t Lits.+ 1
 
-instance (Inhabited Word16 l r, PlusCtx Word16 l r) => Plus Word16 l r
-instance (Inhabited Word16 l r, MultCtx Word16 l r) => Mult Word16 l r
-instance (Inhabited Word16 l r, MinusCtx Word16 l r) => Minus Word16 l r
+instance (Inhabited Word16 l r, PlusCtx Word16 l r) => Plus Word16 l r where
+  a `plus` b = from =<< toIntegralSized (toInteger (unwrap a) +
+                                         toInteger (unwrap b))
+
+instance (Inhabited Word16 l r, MultCtx Word16 l r) => Mult Word16 l r where
+  a `mult` b = from =<< toIntegralSized (toInteger (unwrap a) *
+                                         toInteger (unwrap b))
+
+instance (Inhabited Word16 l r, MinusCtx Word16 l r) => Minus Word16 l r where
+  a `minus` b = from =<< toIntegralSized (toInteger (unwrap a) -
+                                          toInteger (unwrap b))
+
 instance (Inhabited Word16 l r, ZeroCtx Word16 l r) => Zero Word16 l r where
   type ZeroCtx Word16 l r = (l <= 0, 0 <= r)
   zero = UnsafeI 0
+
 instance (Inhabited Word16 l r, OneCtx Word16 l r) => One Word16 l r where
   type OneCtx Word16 l r = (l <= 1, 1 <= r)
   one = UnsafeI 1

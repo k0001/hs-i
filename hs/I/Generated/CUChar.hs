@@ -8,6 +8,7 @@
 module I.Generated.CUChar () where
 
 import Control.Monad
+import Data.Bits
 import Data.Constraint
 import Data.Maybe
 import Data.Proxy
@@ -94,12 +95,22 @@ instance
   type KnownSuccCtx CUChar t l r = t /= r
   type Succ' CUChar t l r = t Lits.+ 1
 
-instance (Inhabited CUChar l r, PlusCtx CUChar l r) => Plus CUChar l r
-instance (Inhabited CUChar l r, MultCtx CUChar l r) => Mult CUChar l r
-instance (Inhabited CUChar l r, MinusCtx CUChar l r) => Minus CUChar l r
+instance (Inhabited CUChar l r, PlusCtx CUChar l r) => Plus CUChar l r where
+  a `plus` b = from =<< toIntegralSized (toInteger (unwrap a) +
+                                         toInteger (unwrap b))
+
+instance (Inhabited CUChar l r, MultCtx CUChar l r) => Mult CUChar l r where
+  a `mult` b = from =<< toIntegralSized (toInteger (unwrap a) *
+                                         toInteger (unwrap b))
+
+instance (Inhabited CUChar l r, MinusCtx CUChar l r) => Minus CUChar l r where
+  a `minus` b = from =<< toIntegralSized (toInteger (unwrap a) -
+                                          toInteger (unwrap b))
+
 instance (Inhabited CUChar l r, ZeroCtx CUChar l r) => Zero CUChar l r where
   type ZeroCtx CUChar l r = (l <= 0, 0 <= r)
   zero = UnsafeI 0
+
 instance (Inhabited CUChar l r, OneCtx CUChar l r) => One CUChar l r where
   type OneCtx CUChar l r = (l <= 1, 1 <= r)
   one = UnsafeI 1

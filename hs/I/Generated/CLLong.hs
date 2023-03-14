@@ -8,13 +8,14 @@
 module I.Generated.CLLong () where
 
 import Control.Monad
+import Data.Bits
 import Data.Constraint
 import Data.Int
 import Data.Maybe
 import Data.Proxy
 import Data.Type.Ord
 import Foreign.C.Types
-import KindInteger (type (/=))
+import KindInteger (type (/=), type (==))
 import KindInteger qualified as K
 import Prelude hiding (min, max, div)
 
@@ -86,20 +87,34 @@ instance
   ) => KnownPred CLLong t l r where
   type KnownPredCtx CLLong t l r = t /= l
   type Pred' CLLong t l r = t K.- K.P 1
+
 instance
   ( Known CLLong t l r, Succ CLLong l r, KnownSuccCtx CLLong t l r
   ) => KnownSucc CLLong t l r where
   type KnownSuccCtx CLLong t l r = t /= r
   type Succ' CLLong t l r = t K.+ K.P 1
 
-instance (Inhabited CLLong l r, PlusCtx CLLong l r) => Plus CLLong l r
+instance (Inhabited CLLong l r, PlusCtx CLLong l r) => Plus CLLong l r where
+  a `plus` b = from =<< toIntegralSized (toInteger (unwrap a) +
+                                         toInteger (unwrap b))
+
 instance (Plus CLLong l r, Zero CLLong l r, PlusInvCtx CLLong l r)
-  => PlusInv CLLong l r
-instance (Inhabited CLLong l r, MultCtx CLLong l r) => Mult CLLong l r
-instance (Inhabited CLLong l r, MinusCtx CLLong l r) => Minus CLLong l r
+  => PlusInv CLLong l r where
+  type PlusInvCtx CLLong l r = l == K.Negate r
+  plusinv = UnsafeI . negate . unwrap
+
+instance (Inhabited CLLong l r, MultCtx CLLong l r) => Mult CLLong l r where
+  a `mult` b = from =<< toIntegralSized (toInteger (unwrap a) *
+                                         toInteger (unwrap b))
+
+instance (Inhabited CLLong l r, MinusCtx CLLong l r) => Minus CLLong l r where
+  a `minus` b = from =<< toIntegralSized (toInteger (unwrap a) -
+                                          toInteger (unwrap b))
+
 instance (Inhabited CLLong l r, ZeroCtx CLLong l r) => Zero CLLong l r where
   type ZeroCtx CLLong l r = (l <= K.P 0, K.P 0 <= r)
   zero = UnsafeI 0
+
 instance (Inhabited CLLong l r, OneCtx CLLong l r) => One CLLong l r where
   type OneCtx CLLong l r = (l <= K.P 1, K.P 1 <= r)
   one = UnsafeI 1

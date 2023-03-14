@@ -8,13 +8,14 @@
 module I.Generated.CLong () where
 
 import Control.Monad
+import Data.Bits
 import Data.Constraint
 import Data.Int
 import Data.Maybe
 import Data.Proxy
 import Data.Type.Ord
 import Foreign.C.Types
-import KindInteger (type (/=))
+import KindInteger (type (/=), type (==))
 import KindInteger qualified as K
 import Prelude hiding (min, max, div)
 
@@ -86,20 +87,34 @@ instance
   ) => KnownPred CLong t l r where
   type KnownPredCtx CLong t l r = t /= l
   type Pred' CLong t l r = t K.- K.P 1
+
 instance
   ( Known CLong t l r, Succ CLong l r, KnownSuccCtx CLong t l r
   ) => KnownSucc CLong t l r where
   type KnownSuccCtx CLong t l r = t /= r
   type Succ' CLong t l r = t K.+ K.P 1
 
-instance (Inhabited CLong l r, PlusCtx CLong l r) => Plus CLong l r
+instance (Inhabited CLong l r, PlusCtx CLong l r) => Plus CLong l r where
+  a `plus` b = from =<< toIntegralSized (toInteger (unwrap a) +
+                                         toInteger (unwrap b))
+
 instance (Plus CLong l r, Zero CLong l r, PlusInvCtx CLong l r)
-  => PlusInv CLong l r
-instance (Inhabited CLong l r, MultCtx CLong l r) => Mult CLong l r
-instance (Inhabited CLong l r, MinusCtx CLong l r) => Minus CLong l r
+  => PlusInv CLong l r where
+  type PlusInvCtx CLong l r = l == K.Negate r
+  plusinv = UnsafeI . negate . unwrap
+
+instance (Inhabited CLong l r, MultCtx CLong l r) => Mult CLong l r where
+  a `mult` b = from =<< toIntegralSized (toInteger (unwrap a) *
+                                         toInteger (unwrap b))
+
+instance (Inhabited CLong l r, MinusCtx CLong l r) => Minus CLong l r where
+  a `minus` b = from =<< toIntegralSized (toInteger (unwrap a) -
+                                          toInteger (unwrap b))
+
 instance (Inhabited CLong l r, ZeroCtx CLong l r) => Zero CLong l r where
   type ZeroCtx CLong l r = (l <= K.P 0, K.P 0 <= r)
   zero = UnsafeI 0
+
 instance (Inhabited CLong l r, OneCtx CLong l r) => One CLong l r where
   type OneCtx CLong l r = (l <= K.P 1, K.P 1 <= r)
   one = UnsafeI 1

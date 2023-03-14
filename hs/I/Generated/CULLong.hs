@@ -8,6 +8,7 @@
 module I.Generated.CULLong () where
 
 import Control.Monad
+import Data.Bits
 import Data.Constraint
 import Data.Maybe
 import Data.Proxy
@@ -94,12 +95,22 @@ instance
   type KnownSuccCtx CULLong t l r = t /= r
   type Succ' CULLong t l r = t Lits.+ 1
 
-instance (Inhabited CULLong l r, PlusCtx CULLong l r) => Plus CULLong l r
-instance (Inhabited CULLong l r, MultCtx CULLong l r) => Mult CULLong l r
-instance (Inhabited CULLong l r, MinusCtx CULLong l r) => Minus CULLong l r
+instance (Inhabited CULLong l r, PlusCtx CULLong l r) => Plus CULLong l r where
+  a `plus` b = from =<< toIntegralSized (toInteger (unwrap a) +
+                                         toInteger (unwrap b))
+
+instance (Inhabited CULLong l r, MultCtx CULLong l r) => Mult CULLong l r where
+  a `mult` b = from =<< toIntegralSized (toInteger (unwrap a) *
+                                         toInteger (unwrap b))
+
+instance (Inhabited CULLong l r, MinusCtx CULLong l r) => Minus CULLong l r where
+  a `minus` b = from =<< toIntegralSized (toInteger (unwrap a) -
+                                          toInteger (unwrap b))
+
 instance (Inhabited CULLong l r, ZeroCtx CULLong l r) => Zero CULLong l r where
   type ZeroCtx CULLong l r = (l <= 0, 0 <= r)
   zero = UnsafeI 0
+
 instance (Inhabited CULLong l r, OneCtx CULLong l r) => One CULLong l r where
   type OneCtx CULLong l r = (l <= 1, 1 <= r)
   one = UnsafeI 1

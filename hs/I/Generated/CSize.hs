@@ -8,6 +8,7 @@
 module I.Generated.CSize () where
 
 import Control.Monad
+import Data.Bits
 import Data.Constraint
 import Data.Maybe
 import Data.Proxy
@@ -94,12 +95,22 @@ instance
   type KnownSuccCtx CSize t l r = t /= r
   type Succ' CSize t l r = t Lits.+ 1
 
-instance (Inhabited CSize l r, PlusCtx CSize l r) => Plus CSize l r
-instance (Inhabited CSize l r, MultCtx CSize l r) => Mult CSize l r
-instance (Inhabited CSize l r, MinusCtx CSize l r) => Minus CSize l r
+instance (Inhabited CSize l r, PlusCtx CSize l r) => Plus CSize l r where
+  a `plus` b = from =<< toIntegralSized (toInteger (unwrap a) +
+                                         toInteger (unwrap b))
+
+instance (Inhabited CSize l r, MultCtx CSize l r) => Mult CSize l r where
+  a `mult` b = from =<< toIntegralSized (toInteger (unwrap a) *
+                                         toInteger (unwrap b))
+
+instance (Inhabited CSize l r, MinusCtx CSize l r) => Minus CSize l r where
+  a `minus` b = from =<< toIntegralSized (toInteger (unwrap a) -
+                                          toInteger (unwrap b))
+
 instance (Inhabited CSize l r, ZeroCtx CSize l r) => Zero CSize l r where
   type ZeroCtx CSize l r = (l <= 0, 0 <= r)
   zero = UnsafeI 0
+
 instance (Inhabited CSize l r, OneCtx CSize l r) => One CSize l r where
   type OneCtx CSize l r = (l <= 1, 1 <= r)
   one = UnsafeI 1

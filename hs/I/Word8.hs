@@ -7,6 +7,7 @@
 module I.Word8 () where
 
 import Control.Monad
+import Data.Bits
 import Data.Constraint
 import Data.Maybe
 import Data.Proxy
@@ -93,12 +94,22 @@ instance
   type KnownSuccCtx Word8 t l r = t /= r
   type Succ' Word8 t l r = t Lits.+ 1
 
-instance (Inhabited Word8 l r, PlusCtx Word8 l r) => Plus Word8 l r
-instance (Inhabited Word8 l r, MultCtx Word8 l r) => Mult Word8 l r
-instance (Inhabited Word8 l r, MinusCtx Word8 l r) => Minus Word8 l r
+instance (Inhabited Word8 l r, PlusCtx Word8 l r) => Plus Word8 l r where
+  a `plus` b = from =<< toIntegralSized (toInteger (unwrap a) +
+                                         toInteger (unwrap b))
+
+instance (Inhabited Word8 l r, MultCtx Word8 l r) => Mult Word8 l r where
+  a `mult` b = from =<< toIntegralSized (toInteger (unwrap a) *
+                                         toInteger (unwrap b))
+
+instance (Inhabited Word8 l r, MinusCtx Word8 l r) => Minus Word8 l r where
+  a `minus` b = from =<< toIntegralSized (toInteger (unwrap a) -
+                                          toInteger (unwrap b))
+
 instance (Inhabited Word8 l r, ZeroCtx Word8 l r) => Zero Word8 l r where
   type ZeroCtx Word8 l r = (l <= 0, 0 <= r)
   zero = UnsafeI 0
+
 instance (Inhabited Word8 l r, OneCtx Word8 l r) => One Word8 l r where
   type OneCtx Word8 l r = (l <= 1, 1 <= r)
   one = UnsafeI 1

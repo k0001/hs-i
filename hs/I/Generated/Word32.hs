@@ -8,6 +8,7 @@
 module I.Generated.Word32 () where
 
 import Control.Monad
+import Data.Bits
 import Data.Constraint
 import Data.Maybe
 import Data.Proxy
@@ -94,12 +95,22 @@ instance
   type KnownSuccCtx Word32 t l r = t /= r
   type Succ' Word32 t l r = t Lits.+ 1
 
-instance (Inhabited Word32 l r, PlusCtx Word32 l r) => Plus Word32 l r
-instance (Inhabited Word32 l r, MultCtx Word32 l r) => Mult Word32 l r
-instance (Inhabited Word32 l r, MinusCtx Word32 l r) => Minus Word32 l r
+instance (Inhabited Word32 l r, PlusCtx Word32 l r) => Plus Word32 l r where
+  a `plus` b = from =<< toIntegralSized (toInteger (unwrap a) +
+                                         toInteger (unwrap b))
+
+instance (Inhabited Word32 l r, MultCtx Word32 l r) => Mult Word32 l r where
+  a `mult` b = from =<< toIntegralSized (toInteger (unwrap a) *
+                                         toInteger (unwrap b))
+
+instance (Inhabited Word32 l r, MinusCtx Word32 l r) => Minus Word32 l r where
+  a `minus` b = from =<< toIntegralSized (toInteger (unwrap a) -
+                                          toInteger (unwrap b))
+
 instance (Inhabited Word32 l r, ZeroCtx Word32 l r) => Zero Word32 l r where
   type ZeroCtx Word32 l r = (l <= 0, 0 <= r)
   zero = UnsafeI 0
+
 instance (Inhabited Word32 l r, OneCtx Word32 l r) => One Word32 l r where
   type OneCtx Word32 l r = (l <= 1, 1 <= r)
   one = UnsafeI 1

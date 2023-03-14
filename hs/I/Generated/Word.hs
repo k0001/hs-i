@@ -8,6 +8,7 @@
 module I.Generated.Word () where
 
 import Control.Monad
+import Data.Bits
 import Data.Constraint
 import Data.Maybe
 import Data.Proxy
@@ -94,12 +95,22 @@ instance
   type KnownSuccCtx Word t l r = t /= r
   type Succ' Word t l r = t Lits.+ 1
 
-instance (Inhabited Word l r, PlusCtx Word l r) => Plus Word l r
-instance (Inhabited Word l r, MultCtx Word l r) => Mult Word l r
-instance (Inhabited Word l r, MinusCtx Word l r) => Minus Word l r
+instance (Inhabited Word l r, PlusCtx Word l r) => Plus Word l r where
+  a `plus` b = from =<< toIntegralSized (toInteger (unwrap a) +
+                                         toInteger (unwrap b))
+
+instance (Inhabited Word l r, MultCtx Word l r) => Mult Word l r where
+  a `mult` b = from =<< toIntegralSized (toInteger (unwrap a) *
+                                         toInteger (unwrap b))
+
+instance (Inhabited Word l r, MinusCtx Word l r) => Minus Word l r where
+  a `minus` b = from =<< toIntegralSized (toInteger (unwrap a) -
+                                          toInteger (unwrap b))
+
 instance (Inhabited Word l r, ZeroCtx Word l r) => Zero Word l r where
   type ZeroCtx Word l r = (l <= 0, 0 <= r)
   zero = UnsafeI 0
+
 instance (Inhabited Word l r, OneCtx Word l r) => One Word l r where
   type OneCtx Word l r = (l <= 1, 1 <= r)
   one = UnsafeI 1

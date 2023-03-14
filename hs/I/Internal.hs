@@ -8,8 +8,6 @@
 
 module I.Internal where
 
-import Control.Monad
-import Data.Bits
 import Data.Coerce
 import Data.Constraint
 import Data.Kind
@@ -167,23 +165,14 @@ class (Inhabited x l r, PlusCtx x l r)
   -- | @a `'plus'` b@ adds @a@ and @b@
   -- 'Nothing' if the result would be out of the interval.
   plus :: I x l r -> I x l r -> Maybe (I x l r)
-  default plus :: (Bits x, Integral x)
-               => I x l r -> I x l r -> Maybe (I x l r)
-  a `plus` b = from =<< toIntegralSized (toInteger (unwrap a) +
-                                         toInteger (unwrap b))
 
 -- | Intervals supporting /multiplication/.
 class (Inhabited x l r, MultCtx x l r)
   => Mult (x :: Type) (l :: L x) (r :: R x) where
   type MultCtx x l r :: Constraint
   type MultCtx x l r = ()
-  -- | @a `'mult'` b@ multiples @a@ times @b@.
   -- 'Nothing' if the result would be out of the interval.
   mult :: I x l r -> I x l r -> Maybe (I x l r)
-  default mult :: (Bits x, Integral x)
-               => I x l r -> I x l r -> Maybe (I x l r)
-  a `mult` b = from =<< toIntegralSized (toInteger (unwrap a) *
-                                         toInteger (unwrap b))
 
 -- | Intervals supporting /subtraction/.
 class (Inhabited x l r, MinusCtx x l r)
@@ -193,10 +182,6 @@ class (Inhabited x l r, MinusCtx x l r)
   -- | @a `'minus'` b@ substracts @b@ from @a@.
   -- 'Nothing' if the result would be out of the interval.
   minus :: I x l r -> I x l r -> Maybe (I x l r)
-  default minus :: (Bits x, Integral x)
-                => I x l r -> I x l r -> Maybe (I x l r)
-  a `minus` b = from =<< toIntegralSized (toInteger (unwrap a) -
-                                          toInteger (unwrap b))
 
 -- | Intervals supporting /zero/.
 class (Inhabited x l r, ZeroCtx x l r)
@@ -220,9 +205,7 @@ class (Plus x l r, Zero x l r, Minus x l r, PlusInvCtx x l r)
   type PlusInvCtx x l r :: Constraint
   type PlusInvCtx x l r = ()
   -- | Additive inverse, if it fits in the interval.
-  plusinv :: I x l r -> Maybe (I x l r)
-  default plusinv :: (Bits x, Integral x) => I x l r -> Maybe (I x l r)
-  plusinv i = from =<< toIntegralSized (negate (toInteger (unwrap i)))
+  plusinv :: I x l r -> I x l r
 
 -- | Intervals supporting /multiplicative inverse/.
 class (Mult x l r, One x l r, MultInvCtx x l r)
@@ -230,14 +213,14 @@ class (Mult x l r, One x l r, MultInvCtx x l r)
   type MultInvCtx x l r :: Constraint
   type MultInvCtx x l r = ()
   -- | Multiplicative inverse, if it fits in the interval.
-  multinv :: I x l r -> Maybe (I x l r)
-  default multinv :: (Real x, Fractional x) => I x l r -> Maybe (I x l r)
-  multinv = from . fromRational . recip . toRational . unwrap
+  multinv :: I x l r -> I x l r
+  -- default multinv :: (Real x, Fractional x) => I x l r -> Maybe (I x l r)
+  -- multinv = from . fromRational . recip . toRational . unwrap
 
 -- | @a `'div'` b@ divides @a@ by @b@. 'Nothing' if the result doesn't fit in
 -- the interval.
 div :: forall x l r. MultInv x l r => I x l r -> I x l r -> Maybe (I x l r)
-div a b = mult a =<< multinv b
+div a b = mult a (multinv b)
 
 -- | Obtain the single element in the @'I' x l r@ interval.
 single

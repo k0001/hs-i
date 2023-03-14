@@ -8,13 +8,14 @@
 module I.Generated.CPtrdiff () where
 
 import Control.Monad
+import Data.Bits
 import Data.Constraint
 import Data.Int
 import Data.Maybe
 import Data.Proxy
 import Data.Type.Ord
 import Foreign.C.Types
-import KindInteger (type (/=))
+import KindInteger (type (/=), type (==))
 import KindInteger qualified as K
 import Prelude hiding (min, max, div)
 
@@ -86,20 +87,34 @@ instance
   ) => KnownPred CPtrdiff t l r where
   type KnownPredCtx CPtrdiff t l r = t /= l
   type Pred' CPtrdiff t l r = t K.- K.P 1
+
 instance
   ( Known CPtrdiff t l r, Succ CPtrdiff l r, KnownSuccCtx CPtrdiff t l r
   ) => KnownSucc CPtrdiff t l r where
   type KnownSuccCtx CPtrdiff t l r = t /= r
   type Succ' CPtrdiff t l r = t K.+ K.P 1
 
-instance (Inhabited CPtrdiff l r, PlusCtx CPtrdiff l r) => Plus CPtrdiff l r
+instance (Inhabited CPtrdiff l r, PlusCtx CPtrdiff l r) => Plus CPtrdiff l r where
+  a `plus` b = from =<< toIntegralSized (toInteger (unwrap a) +
+                                         toInteger (unwrap b))
+
 instance (Plus CPtrdiff l r, Zero CPtrdiff l r, PlusInvCtx CPtrdiff l r)
-  => PlusInv CPtrdiff l r
-instance (Inhabited CPtrdiff l r, MultCtx CPtrdiff l r) => Mult CPtrdiff l r
-instance (Inhabited CPtrdiff l r, MinusCtx CPtrdiff l r) => Minus CPtrdiff l r
+  => PlusInv CPtrdiff l r where
+  type PlusInvCtx CPtrdiff l r = l == K.Negate r
+  plusinv = UnsafeI . negate . unwrap
+
+instance (Inhabited CPtrdiff l r, MultCtx CPtrdiff l r) => Mult CPtrdiff l r where
+  a `mult` b = from =<< toIntegralSized (toInteger (unwrap a) *
+                                         toInteger (unwrap b))
+
+instance (Inhabited CPtrdiff l r, MinusCtx CPtrdiff l r) => Minus CPtrdiff l r where
+  a `minus` b = from =<< toIntegralSized (toInteger (unwrap a) -
+                                          toInteger (unwrap b))
+
 instance (Inhabited CPtrdiff l r, ZeroCtx CPtrdiff l r) => Zero CPtrdiff l r where
   type ZeroCtx CPtrdiff l r = (l <= K.P 0, K.P 0 <= r)
   zero = UnsafeI 0
+
 instance (Inhabited CPtrdiff l r, OneCtx CPtrdiff l r) => One CPtrdiff l r where
   type OneCtx CPtrdiff l r = (l <= K.P 1, K.P 1 <= r)
   one = UnsafeI 1

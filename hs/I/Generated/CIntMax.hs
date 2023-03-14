@@ -8,13 +8,14 @@
 module I.Generated.CIntMax () where
 
 import Control.Monad
+import Data.Bits
 import Data.Constraint
 import Data.Int
 import Data.Maybe
 import Data.Proxy
 import Data.Type.Ord
 import Foreign.C.Types
-import KindInteger (type (/=))
+import KindInteger (type (/=), type (==))
 import KindInteger qualified as K
 import Prelude hiding (min, max, div)
 
@@ -86,20 +87,34 @@ instance
   ) => KnownPred CIntMax t l r where
   type KnownPredCtx CIntMax t l r = t /= l
   type Pred' CIntMax t l r = t K.- K.P 1
+
 instance
   ( Known CIntMax t l r, Succ CIntMax l r, KnownSuccCtx CIntMax t l r
   ) => KnownSucc CIntMax t l r where
   type KnownSuccCtx CIntMax t l r = t /= r
   type Succ' CIntMax t l r = t K.+ K.P 1
 
-instance (Inhabited CIntMax l r, PlusCtx CIntMax l r) => Plus CIntMax l r
+instance (Inhabited CIntMax l r, PlusCtx CIntMax l r) => Plus CIntMax l r where
+  a `plus` b = from =<< toIntegralSized (toInteger (unwrap a) +
+                                         toInteger (unwrap b))
+
 instance (Plus CIntMax l r, Zero CIntMax l r, PlusInvCtx CIntMax l r)
-  => PlusInv CIntMax l r
-instance (Inhabited CIntMax l r, MultCtx CIntMax l r) => Mult CIntMax l r
-instance (Inhabited CIntMax l r, MinusCtx CIntMax l r) => Minus CIntMax l r
+  => PlusInv CIntMax l r where
+  type PlusInvCtx CIntMax l r = l == K.Negate r
+  plusinv = UnsafeI . negate . unwrap
+
+instance (Inhabited CIntMax l r, MultCtx CIntMax l r) => Mult CIntMax l r where
+  a `mult` b = from =<< toIntegralSized (toInteger (unwrap a) *
+                                         toInteger (unwrap b))
+
+instance (Inhabited CIntMax l r, MinusCtx CIntMax l r) => Minus CIntMax l r where
+  a `minus` b = from =<< toIntegralSized (toInteger (unwrap a) -
+                                          toInteger (unwrap b))
+
 instance (Inhabited CIntMax l r, ZeroCtx CIntMax l r) => Zero CIntMax l r where
   type ZeroCtx CIntMax l r = (l <= K.P 0, K.P 0 <= r)
   zero = UnsafeI 0
+
 instance (Inhabited CIntMax l r, OneCtx CIntMax l r) => One CIntMax l r where
   type OneCtx CIntMax l r = (l <= K.P 1, K.P 1 <= r)
   one = UnsafeI 1
