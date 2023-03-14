@@ -19,7 +19,7 @@ import Data.Type.Equality
 import Foreign.C.Types
 import GHC.TypeLits qualified as L
 import KindInteger qualified as K
-import Prelude hiding (min, max, div, pred, succ, recip)
+import Prelude hiding (min, max, div, pred, succ, recip, negate)
 import Unsafe.Coerce (unsafeCoerce)
 
 --------------------------------------------------------------------------------
@@ -77,7 +77,7 @@ type family MinL (x :: Type) :: L x
 type family R (x :: Type) :: k
 
 -- | __Max__imum __r__ight bound for @x@.  All the values of type @x@ are at
--- most as @'MinR' x@ states, as required by 'wrap'.
+-- most as @'MaxR' x@ states, as required by 'wrap'.
 type family MaxR (x :: Type) :: R x
 
 
@@ -87,7 +87,7 @@ type family MaxR (x :: Type) :: R x
 -- __NB__: When defining 'Interval' instances, instead of mentioning any
 -- necessary constraints in the instance context, mention them them in
 -- 'IntervalCtx'. By doing so, when an instance of @'Interval' x l r@ is
--- satisfied, @'IntervalConstraint' x l r@ is satisfied as well.
+-- satisfied, @'IntervalCtx' x l r@ is satisfied as well.
 class IntervalCtx x l r => Interval (x :: Type) (l :: L x) (r :: R x) where
   -- | Constraints to be satisfied for @'I' x l r@ to be a valid interval type.
   type IntervalCtx x l r :: Constraint
@@ -112,7 +112,7 @@ class IntervalCtx x l r => Interval (x :: Type) (l :: L x) (r :: R x) where
 -- __NB__: When defining 'Inhabited' instances, instead of mentioning any
 -- necessary constraints in the instance context, mention them them in
 -- 'InhabitedCtx'. By doing so, when an instance of @'Inhabited' x l r@ is
--- satisfied, @'InhabitedConstraint' x l r@ is satisfied as well.
+-- satisfied, @'InhabitedCtx' x l r@ is satisfied as well.
 class (Interval x l r, InhabitedCtx x l r)
   => Inhabited (x :: Type) (l :: L x) (r :: R x) where
   -- | Constraints to be satisfied for @'I' x l r@ to be a inhabited.
@@ -174,9 +174,8 @@ clamp x
   | x >= unwrap (max @x @l @r) = max
   | otherwise                  = UnsafeI x
 
-class
-  ( Inhabited x l r
-  ) => Discrete (x :: Type) (l :: L x) (r :: R x) where
+-- | Intervals that contain /discrete/ elements.
+class (Inhabited x l r) => Discrete (x :: Type) (l :: L x) (r :: R x) where
   -- | __Pred__ecessor. That is, the previous /discrete/ value in the interval.
   --
   -- 'Nothing' if the result would be out of the interval. See 'pred' too.

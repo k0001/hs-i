@@ -10,20 +10,21 @@
 module I
  ( -- * Intervals
    I
- , unwrap
-   -- * Type-level elements
+ , Interval(..)
+   -- ** Type-level
  , T
  , MinT
  , MaxT
-   -- * Left end
+   -- ** Left end
  , L
  , MinL
-   -- * Right end
+   -- ** Right end
  , R
  , MaxR
-   -- * Known intervals
- , Interval(..)
+
+   -- * Inhabited
  , Inhabited(..)
+ , unwrap
  , wrap
  , clamp
  , Discrete(..)
@@ -38,7 +39,7 @@ module I
  , Recip(..)
  , div
  , div'
-   -- * Known interval elements
+   -- ** Known
  , Known(..)
  , With(..)
  , min
