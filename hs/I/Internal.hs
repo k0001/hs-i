@@ -172,12 +172,6 @@ class (Interval x l r, InhabitedCtx x l r)
   div' a b = mult' a =<< recip' b
   {-# INLINE div' #-}
 
--- | Downcast @'I' x lu ru@ into @'I' x ld rd@ if wrapped @x@ value fits
--- in @'I' x ld rd@.
-down :: forall x lu ru ld rd. Inhabited x ld rd => I x lu ru -> Maybe (I x ld rd)
-down = from . unwrap
-{-# INLINE down #-}
-
 -- | Wrap @x@ in @'I' x l r@, making sure that @x@ is within the interval
 -- ends by clamping it to @'MinI' x l r@ if less than @l@, or to
 -- @'MaxI' x l r@ if more than @r@.
@@ -192,6 +186,23 @@ clamp x
   | x <= unwrap (min @x @l @r) = min
   | x >= unwrap (max @x @l @r) = max
   | otherwise                  = UnsafeI x
+
+-- | Downcast @'I' x lu ru@ into @'I' x ld rd@ if wrapped @x@ value fits
+-- in @'I' x ld rd@.
+down :: forall x lu ru ld rd. Inhabited x ld rd => I x lu ru -> Maybe (I x ld rd)
+down = from . unwrap
+{-# INLINE down #-}
+
+class (Inhabited x ld rd, Inhabited x lu ru)
+  => Up (x :: Type) (ld :: L x) (rd :: R x) (lu :: L x) (ru :: R x)
+
+-- | Identity.
+instance (Inhabited x l r, Inhabited x l r) => Up x l r l r
+
+-- | Upcast @'I' x ld rd@ into @'I' x lu ru@.
+up :: forall x ld rd lu ru. Up x ld rd lu ru => I x ld rd -> I x lu ru
+up = UnsafeI . unwrap
+{-# INLINE up #-}
 
 -- | Intervals that contain /discrete/ elements.
 class (Inhabited x l r) => Discrete (x :: Type) (l :: L x) (r :: R x) where

@@ -66,6 +66,9 @@ instance
                   (q, 0) <- pure $ divMod (unwrap a) (unwrap b)
                   from q
 
+instance (Inhabited CSChar ld rd, Inhabited CSChar lu ru, lu <= ld, rd <= ru)
+  => Up CSChar ld rd lu ru
+
 instance forall t l r.
   ( Inhabited CSChar l r, KnownCtx CSChar t l r
   ) => Known CSChar t l r where

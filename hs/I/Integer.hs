@@ -109,6 +109,32 @@ instance Inhabited P.Integer 'Nothing 'Nothing where
 
 --------------------------------------------------------------------------------
 
+instance
+  ( Inhabited Integer ('Just ld) ('Just rd)
+  , Inhabited Integer ('Just lu) ('Just ru)
+  , lu <= ld
+  , rd <= ru )
+  => Up Integer ('Just ld) ('Just rd) ('Just lu) ('Just ru)
+
+instance
+  ( Inhabited Integer ('Just ld) yrd
+  , Inhabited Integer ('Just lu) 'Nothing
+  , lu <= ld )
+  => Up Integer ('Just ld) yrd ('Just lu) 'Nothing
+
+instance
+  ( Inhabited Integer yld ('Just rd)
+  , Inhabited Integer 'Nothing ('Just ru)
+  , rd <= ru )
+  => Up Integer yld ('Just rd) 'Nothing ('Just ru)
+
+instance
+  ( Inhabited Integer yld yrd
+  , Inhabited Integer 'Nothing 'Nothing )
+  => Up Integer yld yrd 'Nothing 'Nothing
+
+--------------------------------------------------------------------------------
+
 instance forall t l r.
   ( Inhabited P.Integer ('Just l) ('Just r)
   , KnownCtx P.Integer t ('Just l) ('Just r)

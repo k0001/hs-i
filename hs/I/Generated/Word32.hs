@@ -66,6 +66,9 @@ instance
                   (q, 0) <- pure $ divMod (unwrap a) (unwrap b)
                   from q
 
+instance (Inhabited Word32 ld rd, Inhabited Word32 lu ru, lu <= ld, rd <= ru)
+  => Up Word32 ld rd lu ru
+
 instance forall t l r.
   ( Inhabited Word32 l r, KnownCtx Word32 t l r
   ) => Known Word32 t l r where

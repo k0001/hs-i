@@ -66,6 +66,9 @@ instance
                   (q, 0) <- pure $ divMod (unwrap a) (unwrap b)
                   from q
 
+instance (Inhabited CPtrdiff ld rd, Inhabited CPtrdiff lu ru, lu <= ld, rd <= ru)
+  => Up CPtrdiff ld rd lu ru
+
 instance forall t l r.
   ( Inhabited CPtrdiff l r, KnownCtx CPtrdiff t l r
   ) => Known CPtrdiff t l r where

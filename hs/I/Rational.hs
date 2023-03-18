@@ -260,6 +260,84 @@ instance Inhabited P.Rational 'Nothing 'Nothing where
 
 --------------------------------------------------------------------------------
 
+-- OO
+instance
+  ( Inhabited Rational ('Just '( 'False, ld)) ('Just '( 'False, rd))
+  , Inhabited Rational ('Just '( 'False, lu)) ('Just '( 'False, ru))
+  , lu <= ld
+  , rd <= ru )
+  => Up Rational ('Just '( 'False, ld)) ('Just '( 'False, rd))
+                 ('Just '( 'False, lu)) ('Just '( 'False, ru))
+
+-- OC
+instance
+  ( Inhabited Rational ('Just '( 'False, ld)) ('Just '( ird  , rd))
+  , Inhabited Rational ('Just '( 'False, lu)) ('Just '( 'True, ru))
+  , lu <= ld
+  , rd <= ru )
+  => Up Rational ('Just '( 'False, ld)) ('Just '( ird  , rd))
+                 ('Just '( 'False, lu)) ('Just '( 'True, ru))
+
+-- OU
+instance
+  ( Inhabited Rational ('Just '( 'False, ld)) yrd
+  , Inhabited Rational ('Just '( 'False, lu)) 'Nothing
+  , lu <= ld )
+  => Up Rational ('Just '( 'False, ld)) yrd
+                 ('Just '( 'False, lu)) 'Nothing
+
+-- CO
+instance
+  ( Inhabited Rational ('Just '( ild  , ld)) ('Just '( 'False, rd))
+  , Inhabited Rational ('Just '( 'True, lu)) ('Just '( 'False, ru))
+  , lu <= ld
+  , rd <= ru )
+  => Up Rational ('Just '( ild  , ld)) ('Just '( 'False, rd))
+                 ('Just '( 'True, lu)) ('Just '( 'False, ru))
+
+-- CC
+instance
+  ( Inhabited Rational ('Just '( ild  , ld)) ('Just '( ird  , rd))
+  , Inhabited Rational ('Just '( 'True, lu)) ('Just '( 'True, ru))
+  , lu <= ld
+  , rd <= ru )
+  => Up Rational ('Just '( ild  , ld)) ('Just '( ird  , rd))
+                 ('Just '( 'True, lu)) ('Just '( 'True, ru))
+
+-- CU
+instance
+  ( Inhabited Rational ('Just '( ild  , ld)) yrd
+  , Inhabited Rational ('Just '( 'True, lu)) 'Nothing
+  , lu <= ld )
+  => Up Rational ('Just '( ild  , ld)) yrd
+                 ('Just '( 'True, lu)) 'Nothing
+
+-- UO
+instance
+  ( Inhabited Rational yld      ('Just '( 'False, rd))
+  , Inhabited Rational 'Nothing ('Just '( 'False, ru))
+  , ru <= rd )
+  => Up Rational yld      ('Just '( 'False, rd))
+                 'Nothing ('Just '( 'False, ru))
+
+-- UC
+instance
+  ( Inhabited Rational yld      ('Just '( ird  , rd))
+  , Inhabited Rational 'Nothing ('Just '( 'True, ru))
+  , ru <= rd )
+  => Up Rational yld      ('Just '( ird  , rd))
+                 'Nothing ('Just '( 'True, ru))
+
+-- UU
+instance
+  ( Inhabited Rational yld      yrd
+  , Inhabited Rational 'Nothing 'Nothing )
+  => Up Rational yld      yrd
+                 'Nothing 'Nothing
+
+--------------------------------------------------------------------------------
+
+
 instance forall t l r.
   ( Inhabited P.Rational ('Just '( 'True, l)) ('Just '( 'True, r))
   , KnownCtx P.Rational t ('Just '( 'True, l)) ('Just '( 'True, r))

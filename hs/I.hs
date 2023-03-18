@@ -26,8 +26,10 @@ module I
  , Inhabited(..)
  , unwrap
  , wrap
- , down
  , clamp
+ , Up
+ , up
+ , down
  , Discrete(..)
  , Succ(..)
  , Pred(..)

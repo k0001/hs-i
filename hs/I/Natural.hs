@@ -83,6 +83,21 @@ instance
 
 --------------------------------------------------------------------------------
 
+instance
+  ( Inhabited Natural ld ('Just rd)
+  , Inhabited Natural lu ('Just ru)
+  , lu <= ld
+  , rd <= ru)
+  => Up Natural ld ('Just rd) lu ('Just ru)
+
+instance
+  ( Inhabited Natural ld yrd
+  , Inhabited Natural lu 'Nothing
+  , lu <= ld )
+  => Up Natural ld yrd lu 'Nothing
+
+--------------------------------------------------------------------------------
+
 instance forall t l r.
   ( Inhabited Natural l ('Just r), KnownCtx Natural t l ('Just r)
   ) => Known Natural t l ('Just r) where

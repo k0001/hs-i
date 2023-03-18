@@ -66,6 +66,9 @@ instance
                   (q, 0) <- pure $ divMod (unwrap a) (unwrap b)
                   from q
 
+instance (Inhabited CIntPtr ld rd, Inhabited CIntPtr lu ru, lu <= ld, rd <= ru)
+  => Up CIntPtr ld rd lu ru
+
 instance forall t l r.
   ( Inhabited CIntPtr l r, KnownCtx CIntPtr t l r
   ) => Known CIntPtr t l r where

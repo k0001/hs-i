@@ -66,6 +66,9 @@ instance
                   (q, 0) <- pure $ divMod (unwrap a) (unwrap b)
                   from q
 
+instance (Inhabited CIntMax ld rd, Inhabited CIntMax lu ru, lu <= ld, rd <= ru)
+  => Up CIntMax ld rd lu ru
+
 instance forall t l r.
   ( Inhabited CIntMax l r, KnownCtx CIntMax t l r
   ) => Known CIntMax t l r where
