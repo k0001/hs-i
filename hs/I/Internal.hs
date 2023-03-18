@@ -172,6 +172,12 @@ class (Interval x l r, InhabitedCtx x l r)
   div' a b = mult' a =<< recip' b
   {-# INLINE div' #-}
 
+-- | Downcast @'I' x lu ru@ into @'I' x ld rd@ if wrapped @x@ value fits
+-- in @'I' x ld rd@.
+down :: forall x lu ru ld rd. Inhabited x ld rd => I x lu ru -> Maybe (I x ld rd)
+down = from . unwrap
+{-# INLINE down #-}
+
 -- | Wrap @x@ in @'I' x l r@, making sure that @x@ is within the interval
 -- ends by clamping it to @'MinI' x l r@ if less than @l@, or to
 -- @'MaxI' x l r@ if more than @r@.

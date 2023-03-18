@@ -26,6 +26,7 @@ module I
  , Inhabited(..)
  , unwrap
  , wrap
+ , down
  , clamp
  , Discrete(..)
  , Succ(..)
@@ -37,7 +38,7 @@ module I
  , Mult(..)
  , Minus(..)
  , Div(..)
-   -- ** Known
+   -- * Known
  , Known(..)
  , With(..)
  , min
