@@ -33,6 +33,7 @@ library
   build-depends:
     constraints,
     kind-integer,
+    kind-rational,
   exposed-modules: I
   other-modules:
     I.Int8

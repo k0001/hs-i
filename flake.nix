@@ -1,7 +1,10 @@
 {
   description = "Haskell 'i' library";
 
-  inputs = { hs_kind.url = "github:k0001/hs-kind"; };
+  inputs = {
+    hs_kind.url = "github:k0001/hs-kind?ref=kind-rational-0.2";
+    hs_kind.inputs.nixpkgs.follows = "nixpkgs";
+  };
 
   outputs = { self, nixpkgs, hs_kind }:
     let
@@ -9,6 +12,7 @@
       hs_i = import ./.;
       hspkgsOverrides = pself: psuper: hself: hsuper: {
         kind-integer = hsuper.callPackage hs_kind.hs_kind-integer { };
+        kind-rational = hsuper.callPackage hs_kind.hs_kind-rational { };
         i = hsuper.callPackage hs_i { };
       };
       pkgsOverlay = pself: psuper: {
