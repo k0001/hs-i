@@ -55,12 +55,13 @@ instance
     Dict <- leNatural @l @x
     Dict <- leNatural @x @r
     pure (UnsafeI x)
-  negate' _ = Nothing
-  recip' _ = Nothing
   a `plus'` b = from (unwrap a + unwrap b)
   a `mult'` b = from (unwrap a * unwrap b)
   a `minus'` b = from =<< toIntegralSized (toInteger (unwrap a) -
                                            toInteger (unwrap b))
+  a `div'` b = do guard (unwrap b /= 0)
+                  (q, 0) <- pure $ divMod (unwrap a) (unwrap b)
+                  from q
 
 instance
   ( Interval Natural l 'Nothing
@@ -72,12 +73,13 @@ instance
     L.SomeNat (_ :: Proxy x) <- L.someNatVal (toInteger x)
     Dict <- leNatural @l @x
     pure (UnsafeI x)
-  negate' _ = Nothing
-  recip' _ = Nothing
   a `plus'` b = pure (a `plus` b)
   a `mult'` b = pure (a `mult` b)
   a `minus'` b = from =<< toIntegralSized (toInteger (unwrap a) -
                                            toInteger (unwrap b))
+  a `div'` b = do guard (unwrap b /= 0)
+                  (q, 0) <- pure $ divMod (unwrap a) (unwrap b)
+                  from q
 
 --------------------------------------------------------------------------------
 

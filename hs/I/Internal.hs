@@ -18,7 +18,8 @@ import Data.Word
 import Data.Type.Equality
 import Foreign.C.Types
 import GHC.TypeLits qualified as L
-import KindInteger qualified as K
+import KindInteger qualified as KI
+import KindRational qualified as KR
 import Prelude hiding (min, max, div, pred, succ, recip, negate)
 import Unsafe.Coerce (unsafeCoerce)
 
@@ -29,17 +30,17 @@ leNatural
   .  (L.KnownNat a, L.KnownNat b)
   => Maybe (Dict (a L.<= b))
 leNatural = case L.cmpNat (Proxy @a) (Proxy @b) of
-  L.EQI -> Just $ unsafeCoerce (Dict @())
   L.LTI -> Just $ unsafeCoerce (Dict @())
+  L.EQI -> Just $ unsafeCoerce (Dict @())
   L.GTI -> Nothing
 
 leInteger
-  :: forall (a :: K.Integer) (b :: K.Integer)
-  .  (K.KnownInteger a, K.KnownInteger b)
+  :: forall (a :: KI.Integer) (b :: KI.Integer)
+  .  (KI.KnownInteger a, KI.KnownInteger b)
   => Maybe (Dict (a L.<= b))
-leInteger = case K.cmpInteger (Proxy @a) (Proxy @b) of
-  L.EQI -> Just $ unsafeCoerce (Dict @())
+leInteger = case KI.cmpInteger (Proxy @a) (Proxy @b) of
   L.LTI -> Just $ unsafeCoerce (Dict @())
+  L.EQI -> Just $ unsafeCoerce (Dict @())
   L.GTI -> Nothing
 
 --------------------------------------------------------------------------------
@@ -142,22 +143,34 @@ class (Interval x l r, InhabitedCtx x l r)
   --
   -- 'Nothing' if the result would be out of the interval. See 'wrap', too.
   plus' :: I x l r -> I x l r -> Maybe (I x l r)
+  plus' _ _ = Nothing
   -- | @a '`mult'`' b@ multiplies @a@ times @b@.
   --
   -- 'Nothing' if the result would be out of the interval. See 'plus', too.
   mult' :: I x l r -> I x l r -> Maybe (I x l r)
+  mult' _ _ = Nothing
   -- | @a '`minus'`' b@ substracts @b@ from @a@.
   --
   -- 'Nothing' if the result would be out of the interval. See 'mult', too.
   minus' :: I x l r -> I x l r -> Maybe (I x l r)
+  minus' a b = plus' a =<< negate' b
+  {-# INLINE minus' #-}
   -- | @'negate'' a@ is the additive inverse of @a@.
   --
   -- 'Nothing' if the result would be out of the interval.  See 'negate', too.
   negate' :: I x l r -> Maybe (I x l r)
+  negate' _ = Nothing
   -- | @'recip'' a@ is the multiplicative inverse of @a@.
   --
-  -- 'Nothing' if the result would be out of the interval.  See 'recip', too.
+  -- 'Nothing' if the result would be out of the interval.
   recip' :: I x l r -> Maybe (I x l r)
+  recip' _ = Nothing
+  -- | @a '`div'`' b@ divides @a@ by @b@.
+  --
+  -- 'Nothing' if the result would be out of the interval. See 'div' too.
+  div' :: I x l r -> I x l r -> Maybe (I x l r)
+  div' a b = mult' a =<< recip' b
+  {-# INLINE div' #-}
 
 -- | Wrap @x@ in @'I' x l r@, making sure that @x@ is within the interval
 -- ends by clamping it to @'MinI' x l r@ if less than @l@, or to
@@ -196,12 +209,12 @@ class (Inhabited x l r) => One (x :: Type) (l :: L x) (r :: R x) where
   one :: I x l r
 
 -- | Intervals /fully/ supporting /addition/.
-class (Discrete x l r) => Plus (x :: Type) (l :: L x) (r :: R x) where
+class (Inhabited x l r) => Plus (x :: Type) (l :: L x) (r :: R x) where
   -- | @a '`plus`' b@ adds @a@ and @b@.
   plus :: I x l r -> I x l r -> I x l r
 
--- | Intervals /fully/ supporting /addition/.
-class (Discrete x l r) => Mult (x :: Type) (l :: L x) (r :: R x) where
+-- | Intervals /fully/ supporting /multiplication/.
+class (Inhabited x l r) => Mult (x :: Type) (l :: L x) (r :: R x) where
   -- | @a '`plus`' b@ multiplies @a@ times @b@.
   mult :: I x l r -> I x l r -> I x l r
 
@@ -231,28 +244,11 @@ class (Discrete x l r) => Succ (x :: Type) (l :: L x) (r :: R x) where
   -- | __Succ__essor. That is, the next /discrete/ value in the interval.
   succ :: I x l r -> I x l r
 
--- | Intervals /fully/ supporting /multiplicative inverse/.
-class (One x l r) => Recip (x :: Type) (l :: L x) (r :: R x) where
-  -- | Multiplicative inverse, if it fits in the interval.
-  --
-  -- @
-  -- forall (a :: 'I' x l r).
-  --   /such that there is a/ 'Recip' x l r /instance.
-  --     'Just' ('recip' a)  = 'recip'' a
-  -- @
-  recip :: I x l r -> I x l r
+-- | Intervals /fully/ supporting /division/.
+class (Inhabited x l r) => Div (x :: Type) (l :: L x) (r :: R x) where
+  -- | @a '`div`' b@ divides @a@ by @b@.
+  div :: I x l r -> I x l r -> I x l r
 
--- | @a '`div'`' b@ divides @a@ by @b@.
---
--- 'Nothing' if the result doesn't fit in the interval. See 'div'' too.
-div' :: forall x l r. Inhabited x l r => I x l r -> I x l r -> Maybe (I x l r)
-div' a b = mult' a =<< recip' b
-{-# INLINE div' #-}
-
--- | @a '`div`' b@ divides @a@ by @b@.
-div :: forall x l r. (Mult x l r, Recip x l r) => I x l r -> I x l r -> I x l r
-div a b = mult a (recip b)
-{-# INLINE div #-}
 
 -- | Obtain the single element in the @'I' x l r@ interval.
 single
@@ -438,35 +434,35 @@ type instance R Word = L.Natural
 type instance MinT Word = 0
 type instance MaxT Word = (2 L.^ WORD_SIZE_IN_BITS) L.- 1
 
-type instance T Int8 = K.Integer
-type instance L Int8 = K.Integer
-type instance R Int8 = K.Integer
-type instance MinT Int8 = K.N 128
-type instance MaxT Int8 = K.P 127
+type instance T Int8 = KI.Integer
+type instance L Int8 = KI.Integer
+type instance R Int8 = KI.Integer
+type instance MinT Int8 = KI.N 128
+type instance MaxT Int8 = KI.P 127
 
-type instance T Int16 = K.Integer
-type instance L Int16 = K.Integer
-type instance R Int16 = K.Integer
-type instance MinT Int16 = K.N 32768
-type instance MaxT Int16 = K.P 32767
+type instance T Int16 = KI.Integer
+type instance L Int16 = KI.Integer
+type instance R Int16 = KI.Integer
+type instance MinT Int16 = KI.N 32768
+type instance MaxT Int16 = KI.P 32767
 
-type instance T Int32 = K.Integer
-type instance L Int32 = K.Integer
-type instance R Int32 = K.Integer
-type instance MinT Int32 = K.N 2147483648
-type instance MaxT Int32 = K.P 2147483647
+type instance T Int32 = KI.Integer
+type instance L Int32 = KI.Integer
+type instance R Int32 = KI.Integer
+type instance MinT Int32 = KI.N 2147483648
+type instance MaxT Int32 = KI.P 2147483647
 
-type instance T Int64 = K.Integer
-type instance L Int64 = K.Integer
-type instance R Int64 = K.Integer
-type instance MinT Int64 = K.N 9223372036854775808
-type instance MaxT Int64 = K.P 9223372036854775807
+type instance T Int64 = KI.Integer
+type instance L Int64 = KI.Integer
+type instance R Int64 = KI.Integer
+type instance MinT Int64 = KI.N 9223372036854775808
+type instance MaxT Int64 = KI.P 9223372036854775807
 
-type instance T Int = K.Integer
-type instance L Int = K.Integer
-type instance R Int = K.Integer
-type instance MinT Int = K.N (L.Div (2 L.^ WORD_SIZE_IN_BITS) 2)
-type instance MaxT Int = K.P (L.Div (2 L.^ WORD_SIZE_IN_BITS) 2 L.- 1)
+type instance T Int = KI.Integer
+type instance L Int = KI.Integer
+type instance R Int = KI.Integer
+type instance MinT Int = KI.N (L.Div (2 L.^ WORD_SIZE_IN_BITS) 2)
+type instance MaxT Int = KI.P (L.Div (2 L.^ WORD_SIZE_IN_BITS) 2 L.- 1)
 
 type instance T CChar = T HTYPE_CHAR
 type instance L CChar = L HTYPE_CHAR
@@ -606,9 +602,27 @@ type instance L L.Natural = L.Natural
 type instance R L.Natural = Maybe L.Natural
 type instance MinT L.Natural = 0
 
-type instance T Integer = K.Integer
--- | ''Nothing' means /unbounded/.
-type instance L Integer = Maybe K.Integer
--- | ''Nothing' means /unbounded/.
-type instance R Integer = Maybe K.Integer
+type instance T Integer = KI.Integer
+-- | * ''Nothing' means /unbounded/.
+--
+-- * @''Just' t@ means up to @t@, /inclusive/.
+type instance L Integer = Maybe KI.Integer
+-- | * ''Nothing' means /unbounded/.
+--
+-- * @''Just' t@ means /up to @t@, inclusive/.
+type instance R Integer = Maybe KI.Integer
+
+type instance T Rational = KR.Rational
+-- | * ''Nothing' means /unbounded/.
+--
+--  * @''Just (''True', t)@ means /up to @t@, inclusive/.
+--
+--  * @''Just (''False', t)@ means /up to @t@, exclusive/.
+type instance L Rational = Maybe (Bool, KR.Rational)
+-- | * ''Nothing' means /unbounded/.
+--
+--  * @''Just (''True', t)@ means /up to @t@, inclusive/.
+--
+--  * @''Just (''False', t)@ means /up to @t@, exclusive/.
+type instance R Rational = Maybe (Bool, KR.Rational)
 

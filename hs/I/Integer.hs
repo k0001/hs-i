@@ -57,10 +57,12 @@ instance forall l r.
     Dict <- leInteger @x @r
     pure (UnsafeI x)
   negate' = from . P.negate . unwrap
-  recip' _ = Nothing
   a `plus'` b = from (unwrap a + unwrap b)
   a `mult'` b = from (unwrap a * unwrap b)
   a `minus'` b = from (unwrap a - unwrap b)
+  a `div'` b = do guard (unwrap b /= 0)
+                  (q, 0) <- pure $ divMod (unwrap a) (unwrap b)
+                  from q
 
 instance forall l.
   ( Interval P.Integer ('Just l) 'Nothing
@@ -71,10 +73,12 @@ instance forall l.
     Dict <- leInteger @l @x
     pure (UnsafeI x)
   negate' = from . P.negate . unwrap
-  recip' _ = Nothing
   a `plus'` b = from (unwrap a + unwrap b)
   a `mult'` b = from (unwrap a * unwrap b)
   a `minus'` b = from (unwrap a - unwrap b)
+  a `div'` b = do guard (unwrap b /= 0)
+                  (q, 0) <- pure $ divMod (unwrap a) (unwrap b)
+                  from q
 
 instance forall r.
   ( Interval P.Integer 'Nothing ('Just r)
@@ -85,19 +89,23 @@ instance forall r.
     Dict <- leInteger @x @r
     pure (UnsafeI x)
   negate' = from . P.negate . unwrap
-  recip' _ = Nothing
   a `plus'` b = from (unwrap a + unwrap b)
   a `mult'` b = from (unwrap a * unwrap b)
   a `minus'` b = from (unwrap a - unwrap b)
+  a `div'` b = do guard (unwrap b /= 0)
+                  (q, 0) <- pure $ divMod (unwrap a) (unwrap b)
+                  from q
 
 instance Inhabited P.Integer 'Nothing 'Nothing where
   inhabitant = zero
   from = pure . wrap
   negate' = pure . wrap . P.negate . unwrap
-  recip' _ = Nothing
   a `plus'` b = pure (a `plus` b)
   a `mult'` b = pure (a `mult` b)
   a `minus'` b = pure (a `minus` b)
+  a `div'` b = do guard (unwrap b /= 0)
+                  (q, 0) <- pure $ divMod (unwrap a) (unwrap b)
+                  from q
 
 --------------------------------------------------------------------------------
 
@@ -193,7 +201,7 @@ instance (Discrete P.Integer l 'Nothing) => Succ P.Integer l 'Nothing where
 --------------------------------------------------------------------------------
 
 instance (Inhabited P.Integer ('Just l) 'Nothing, K.P 0 <= l)
-  => Plus P.Integer (Just l) 'Nothing where
+  => Plus P.Integer ('Just l) 'Nothing where
   a `plus` b = UnsafeI (unwrap a + unwrap b)
 
 instance (Inhabited P.Integer 'Nothing ('Just r), r <= K.P 0)
@@ -205,8 +213,8 @@ instance Plus P.Integer 'Nothing 'Nothing where
 
 --------------------------------------------------------------------------------
 
-instance (Inhabited P.Integer ('Just l) ('Just r), K.P 0 <= l)
-  => Mult P.Integer (Just l) 'Nothing where
+instance (Inhabited P.Integer ('Just l) 'Nothing, K.P 0 <= l)
+  => Mult P.Integer ('Just l) 'Nothing where
   a `mult` b = UnsafeI (unwrap a * unwrap b)
 
 instance Mult P.Integer 'Nothing 'Nothing where

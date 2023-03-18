@@ -56,13 +56,15 @@ instance
     Dict <- leInteger @t @r
     pure (UnsafeI x)
   negate' x = from =<< toIntegralSized (P.negate (toInteger (unwrap x)))
-  recip' _ = Nothing
   a `plus'` b = from =<< toIntegralSized (toInteger (unwrap a) +
                                           toInteger (unwrap b))
   a `mult'` b = from =<< toIntegralSized (toInteger (unwrap a) *
                                           toInteger (unwrap b))
   a `minus'` b = from =<< toIntegralSized (toInteger (unwrap a) -
                                            toInteger (unwrap b))
+  a `div'` b = do guard (unwrap b /= 0)
+                  (q, 0) <- pure $ divMod (unwrap a) (unwrap b)
+                  from q
 
 instance forall t l r.
   ( Inhabited CLLong l r, KnownCtx CLLong t l r
