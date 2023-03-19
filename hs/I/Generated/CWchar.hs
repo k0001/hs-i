@@ -117,3 +117,9 @@ instance (Inhabited CWchar l r, l <= K.P 0, K.P 0 <= r) => Zero CWchar l r where
 instance (Inhabited CWchar l r, l <= K.P 1, K.P 1 <= r) => One CWchar l r where
   one = UnsafeI 1
 
+instance forall l r. (Inhabited CWchar l r) => Shove CWchar l r where
+  shove = \x -> fromMaybe (error "shove(CWchar): impossible") $
+                  from $ fromInteger (mod (toInteger x) (r - l + 1) + l)
+    where l = toInteger (unwrap (min @CWchar @l @r))
+          r = toInteger (unwrap (max @CWchar @l @r))
+

@@ -417,6 +417,22 @@ instance
 
 --------------------------------------------------------------------------------
 
+-- | Shove an @x@ into an interval @'I' x l r@.
+--
+-- Note: This class is useful for testing purposes. For example, if you want to
+-- generate random values of type @'I' x l r@ for testing purposes, all you have
+-- to do is generate random values of type @x@ and then 'shove' them
+-- into @'I' x l r@.
+class Inhabited x l r => Shove (x :: Type) (l :: L x) (r :: R x) where
+  -- | If the given @x@ fits in @I x l r@ as is, then
+  -- @'id' == 'unwrap' . 'shove'@. Otherwise, somehow shove the @x@ into the
+  -- interval @'I' x l r@ in as much as an uniformly distributed manner as
+  -- possible.
+  shove :: x -> I x l r
+
+--------------------------------------------------------------------------------
+
+
 {-
 TODO: I have no idea why, but if I move the T, L or R type instance
 definitions to the I.Naturals module, it does not compile.

@@ -117,3 +117,9 @@ instance (Inhabited CShort l r, l <= K.P 0, K.P 0 <= r) => Zero CShort l r where
 instance (Inhabited CShort l r, l <= K.P 1, K.P 1 <= r) => One CShort l r where
   one = UnsafeI 1
 
+instance forall l r. (Inhabited CShort l r) => Shove CShort l r where
+  shove = \x -> fromMaybe (error "shove(CShort): impossible") $
+                  from $ fromInteger (mod (toInteger x) (r - l + 1) + l)
+    where l = toInteger (unwrap (min @CShort @l @r))
+          r = toInteger (unwrap (max @CShort @l @r))
+

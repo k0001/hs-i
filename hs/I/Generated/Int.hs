@@ -117,3 +117,9 @@ instance (Inhabited Int l r, l <= K.P 0, K.P 0 <= r) => Zero Int l r where
 instance (Inhabited Int l r, l <= K.P 1, K.P 1 <= r) => One Int l r where
   one = UnsafeI 1
 
+instance forall l r. (Inhabited Int l r) => Shove Int l r where
+  shove = \x -> fromMaybe (error "shove(Int): impossible") $
+                  from $ fromInteger (mod (toInteger x) (r - l + 1) + l)
+    where l = toInteger (unwrap (min @Int @l @r))
+          r = toInteger (unwrap (max @Int @l @r))
+

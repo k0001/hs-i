@@ -117,3 +117,9 @@ instance (Inhabited CIntMax l r, l <= K.P 0, K.P 0 <= r) => Zero CIntMax l r whe
 instance (Inhabited CIntMax l r, l <= K.P 1, K.P 1 <= r) => One CIntMax l r where
   one = UnsafeI 1
 
+instance forall l r. (Inhabited CIntMax l r) => Shove CIntMax l r where
+  shove = \x -> fromMaybe (error "shove(CIntMax): impossible") $
+                  from $ fromInteger (mod (toInteger x) (r - l + 1) + l)
+    where l = toInteger (unwrap (min @CIntMax @l @r))
+          r = toInteger (unwrap (max @CIntMax @l @r))
+

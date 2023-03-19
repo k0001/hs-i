@@ -317,3 +317,27 @@ instance (Zero P.Integer ('Just l) ('Just r), l K.== K.Negate r)
 instance Negate P.Integer 'Nothing 'Nothing where
   negate = UnsafeI . P.negate . unwrap
 
+--------------------------------------------------------------------------------
+
+instance Inhabited Integer ('Just l) ('Just r)
+  => Shove Integer ('Just l) ('Just r) where
+  shove = \x -> fromMaybe (error "shove(Integer): impossible") $
+                  from $ mod x (r - l + 1) + l
+    where l = unwrap (min @Integer @('Just l) @('Just r))
+          r = unwrap (max @Integer @('Just l) @('Just r))
+
+instance Inhabited Integer ('Just l) 'Nothing
+  => Shove Integer ('Just l) 'Nothing where
+   shove = \x -> fromMaybe (error "shove(Integer): impossible") $
+                   from $ if x < l then l + (l - x) else x
+     where l = unwrap (min @Integer @('Just l) @'Nothing)
+
+instance Inhabited Integer 'Nothing ('Just r)
+  => Shove Integer 'Nothing ('Just r) where
+   shove = \x -> fromMaybe (error "shove(Integer): impossible") $
+                   from $ if x > r then r - (x - r) else x
+     where r = unwrap (max @Integer @'Nothing @('Just r))
+
+instance Inhabited Integer 'Nothing 'Nothing
+  => Shove Integer 'Nothing 'Nothing where
+   shove = wrap

@@ -104,3 +104,10 @@ instance (Inhabited CSize 0 r) => Zero CSize 0 r where
 
 instance (Inhabited CSize l r, l <= 1, 1 <= r) => One CSize l r where
   one = UnsafeI 1
+
+instance forall l r. (Inhabited CSize l r) => Shove CSize l r where
+  shove = \x -> fromMaybe (error "shove(CSize): impossible") $
+                  from $ fromInteger (mod (toInteger x) (r - l + 1) + l)
+    where l = toInteger (unwrap (min @CSize @l @r))
+          r = toInteger (unwrap (max @CSize @l @r))
+

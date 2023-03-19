@@ -177,3 +177,16 @@ instance (Inhabited Natural l ('Just r), l <= 1, 1 <= r)
   => One Natural l ('Just r) where
   one = UnsafeI 1
 
+--------------------------------------------------------------------------------
+
+instance (Inhabited Natural l ('Just r)) => Shove Natural l ('Just r) where
+  shove = \x -> fromMaybe (error "shove(Natural): impossible") $
+                  from $ mod x (r - l + 1) + l
+    where l = unwrap (min @Natural @l @('Just r))
+          r = unwrap (max @Natural @l @('Just r))
+
+instance (Inhabited Natural l 'Nothing) => Shove Natural l 'Nothing where
+   shove = \x -> fromMaybe (error "shove(Natural): impossible") $
+                   from $ if x < l then l + (l - x) else x
+     where l = unwrap (min @Natural @l @'Nothing)
+

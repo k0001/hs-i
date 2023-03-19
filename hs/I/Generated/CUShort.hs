@@ -104,3 +104,10 @@ instance (Inhabited CUShort 0 r) => Zero CUShort 0 r where
 
 instance (Inhabited CUShort l r, l <= 1, 1 <= r) => One CUShort l r where
   one = UnsafeI 1
+
+instance forall l r. (Inhabited CUShort l r) => Shove CUShort l r where
+  shove = \x -> fromMaybe (error "shove(CUShort): impossible") $
+                  from $ fromInteger (mod (toInteger x) (r - l + 1) + l)
+    where l = toInteger (unwrap (min @CUShort @l @r))
+          r = toInteger (unwrap (max @CUShort @l @r))
+

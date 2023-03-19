@@ -74,6 +74,12 @@ library
 test-suite test
   import: basic
   type: exitcode-stdio-1.0
-  hs-source-dirs: .
-  main-is: test.hs
-  build-depends: i
+  hs-source-dirs: test
+  main-is: Main.hs
+  build-depends:
+    i,
+    hedgehog,
+    tasty,
+    tasty-hedgehog,
+    tasty-hunit,
+

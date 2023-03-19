@@ -104,3 +104,10 @@ instance (Inhabited Word32 0 r) => Zero Word32 0 r where
 
 instance (Inhabited Word32 l r, l <= 1, 1 <= r) => One Word32 l r where
   one = UnsafeI 1
+
+instance forall l r. (Inhabited Word32 l r) => Shove Word32 l r where
+  shove = \x -> fromMaybe (error "shove(Word32): impossible") $
+                  from $ fromInteger (mod (toInteger x) (r - l + 1) + l)
+    where l = toInteger (unwrap (min @Word32 @l @r))
+          r = toInteger (unwrap (max @Word32 @l @r))
+

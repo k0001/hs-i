@@ -117,3 +117,9 @@ instance (Inhabited CLLong l r, l <= K.P 0, K.P 0 <= r) => Zero CLLong l r where
 instance (Inhabited CLLong l r, l <= K.P 1, K.P 1 <= r) => One CLLong l r where
   one = UnsafeI 1
 
+instance forall l r. (Inhabited CLLong l r) => Shove CLLong l r where
+  shove = \x -> fromMaybe (error "shove(CLLong): impossible") $
+                  from $ fromInteger (mod (toInteger x) (r - l + 1) + l)
+    where l = toInteger (unwrap (min @CLLong @l @r))
+          r = toInteger (unwrap (max @CLLong @l @r))
+

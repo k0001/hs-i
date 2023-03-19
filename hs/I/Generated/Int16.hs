@@ -117,3 +117,9 @@ instance (Inhabited Int16 l r, l <= K.P 0, K.P 0 <= r) => Zero Int16 l r where
 instance (Inhabited Int16 l r, l <= K.P 1, K.P 1 <= r) => One Int16 l r where
   one = UnsafeI 1
 
+instance forall l r. (Inhabited Int16 l r) => Shove Int16 l r where
+  shove = \x -> fromMaybe (error "shove(Int16): impossible") $
+                  from $ fromInteger (mod (toInteger x) (r - l + 1) + l)
+    where l = toInteger (unwrap (min @Int16 @l @r))
+          r = toInteger (unwrap (max @Int16 @l @r))
+

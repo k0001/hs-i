@@ -117,3 +117,9 @@ instance (Inhabited CIntPtr l r, l <= K.P 0, K.P 0 <= r) => Zero CIntPtr l r whe
 instance (Inhabited CIntPtr l r, l <= K.P 1, K.P 1 <= r) => One CIntPtr l r where
   one = UnsafeI 1
 
+instance forall l r. (Inhabited CIntPtr l r) => Shove CIntPtr l r where
+  shove = \x -> fromMaybe (error "shove(CIntPtr): impossible") $
+                  from $ fromInteger (mod (toInteger x) (r - l + 1) + l)
+    where l = toInteger (unwrap (min @CIntPtr @l @r))
+          r = toInteger (unwrap (max @CIntPtr @l @r))
+

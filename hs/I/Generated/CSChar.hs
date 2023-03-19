@@ -117,3 +117,9 @@ instance (Inhabited CSChar l r, l <= K.P 0, K.P 0 <= r) => Zero CSChar l r where
 instance (Inhabited CSChar l r, l <= K.P 1, K.P 1 <= r) => One CSChar l r where
   one = UnsafeI 1
 
+instance forall l r. (Inhabited CSChar l r) => Shove CSChar l r where
+  shove = \x -> fromMaybe (error "shove(CSChar): impossible") $
+                  from $ fromInteger (mod (toInteger x) (r - l + 1) + l)
+    where l = toInteger (unwrap (min @CSChar @l @r))
+          r = toInteger (unwrap (max @CSChar @l @r))
+

@@ -117,3 +117,9 @@ instance (Inhabited CLong l r, l <= K.P 0, K.P 0 <= r) => Zero CLong l r where
 instance (Inhabited CLong l r, l <= K.P 1, K.P 1 <= r) => One CLong l r where
   one = UnsafeI 1
 
+instance forall l r. (Inhabited CLong l r) => Shove CLong l r where
+  shove = \x -> fromMaybe (error "shove(CLong): impossible") $
+                  from $ fromInteger (mod (toInteger x) (r - l + 1) + l)
+    where l = toInteger (unwrap (min @CLong @l @r))
+          r = toInteger (unwrap (max @CLong @l @r))
+

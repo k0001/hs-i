@@ -104,3 +104,10 @@ instance (Inhabited CUIntPtr 0 r) => Zero CUIntPtr 0 r where
 
 instance (Inhabited CUIntPtr l r, l <= 1, 1 <= r) => One CUIntPtr l r where
   one = UnsafeI 1
+
+instance forall l r. (Inhabited CUIntPtr l r) => Shove CUIntPtr l r where
+  shove = \x -> fromMaybe (error "shove(CUIntPtr): impossible") $
+                  from $ fromInteger (mod (toInteger x) (r - l + 1) + l)
+    where l = toInteger (unwrap (min @CUIntPtr @l @r))
+          r = toInteger (unwrap (max @CUIntPtr @l @r))
+

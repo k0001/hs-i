@@ -117,3 +117,9 @@ instance (Inhabited CPtrdiff l r, l <= K.P 0, K.P 0 <= r) => Zero CPtrdiff l r w
 instance (Inhabited CPtrdiff l r, l <= K.P 1, K.P 1 <= r) => One CPtrdiff l r where
   one = UnsafeI 1
 
+instance forall l r. (Inhabited CPtrdiff l r) => Shove CPtrdiff l r where
+  shove = \x -> fromMaybe (error "shove(CPtrdiff): impossible") $
+                  from $ fromInteger (mod (toInteger x) (r - l + 1) + l)
+    where l = toInteger (unwrap (min @CPtrdiff @l @r))
+          r = toInteger (unwrap (max @CPtrdiff @l @r))
+
