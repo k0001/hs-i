@@ -56,16 +56,24 @@ instance
     Dict <- leNatural @l @x
     Dict <- leNatural @x @r
     pure (UnsafeI x)
-  a `plus'` b = do let x = unwrap a + unwrap b
-                   guard (x >= unwrap a)
-                   from x
-  a `mult'` b = from =<< toIntegralSized (toInteger (unwrap a) *
-                                          toInteger (unwrap b))
-  a `minus'` b = from =<< toIntegralSized (toInteger (unwrap a) -
-                                           toInteger (unwrap b))
-  a `div'` b = do guard (unwrap b /= 0)
-                  (q, 0) <- pure $ divMod (unwrap a) (unwrap b)
-                  from q
+
+  a `plus'` b = do
+     let x = unwrap a + unwrap b
+     guard (x >= unwrap a)
+     from x
+
+  a `mult'` b =
+     from =<< toIntegralSized (toInteger (unwrap a) *
+                               toInteger (unwrap b))
+
+  a `minus'` b = do
+    guard (a >= b)
+    from (unwrap a - unwrap b)
+
+  a `div'` b = do
+    guard (unwrap b /= 0)
+    (q, 0) <- pure $ divMod (unwrap a) (unwrap b)
+    from q
 
 instance (Inhabited Word16 l r) => Clamp Word16 l r
 
