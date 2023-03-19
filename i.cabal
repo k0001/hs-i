@@ -78,6 +78,7 @@ test-suite test
   main-is: Main.hs
   build-depends:
     i,
+    constraints,
     hedgehog,
     tasty,
     tasty-hedgehog,

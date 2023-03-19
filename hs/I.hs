@@ -46,6 +46,8 @@ module I
  , min
  , max
  , single
+   -- * Testing support
+ , Shove(..)
  ) where
 
 import I.Internal
