@@ -55,7 +55,8 @@ instance
     Dict <- leInteger @l @t
     Dict <- leInteger @t @r
     pure (UnsafeI x)
-  negate' x = from =<< toIntegralSized (P.negate (toInteger (unwrap x)))
+  negate' x = do guard (unwrap x /= minBound)
+                 from (P.negate (unwrap x))
   a `plus'` b = from =<< toIntegralSized (toInteger (unwrap a) +
                                           toInteger (unwrap b))
   a `mult'` b = from =<< toIntegralSized (toInteger (unwrap a) *

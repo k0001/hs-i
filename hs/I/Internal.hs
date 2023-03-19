@@ -395,6 +395,8 @@ unwrap :: forall x l r. I x l r -> x
 unwrap = coerce
 {-# INLINE unwrap #-}
 
+--------------------------------------------------------------------------------
+
 -- | Minimum value in the interval, if @'MinI' x@ is defined.
 min :: forall x l r. Known x (MinI x l r) l r => I x l r
 min = known @_ @(MinI x l r)
@@ -402,6 +404,13 @@ min = known @_ @(MinI x l r)
 -- | Maximum value in the interval, if @'MaxI' x@ is defined.
 max :: forall x l r. Known x (MaxI x l r) l r => I x l r
 max = known @_ @(MaxI x l r)
+
+instance
+  ( Known x (MinI x l r) l r
+  , Known x (MaxI x l r) l r
+  ) => Bounded (I x l r) where
+  minBound = min
+  maxBound = max
 
 --------------------------------------------------------------------------------
 
