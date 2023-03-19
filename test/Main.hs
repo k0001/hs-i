@@ -56,9 +56,9 @@ instance GenI Integer where
     Range.linearFrom 0 (negate (10 ^ (100 :: Int))) (10 ^ (100 :: Int))
 
 instance GenI Rational where
-  genI =
-    let r = Range.linearFrom 0 (negate (10 ^ (100 :: Int))) (10 ^ (100 :: Int))
-    in do n <- Gen.integral r
-          d <- filter (r /= 0) (Gen.integral r)
-          pure $ I.shove (n :% d)
+  genI = do
+    n <- Gen.integral $ Range.linearFrom 0 (negate (10 ^ (100 :: Int)))
+                                           (10 ^ (100 :: Int))
+    d <- Gen.integral $ Range.linear 1 (10 ^ (100 :: Int))
+    pure $ I.shove (n :% d)
 
