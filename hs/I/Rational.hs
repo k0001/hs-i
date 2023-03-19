@@ -260,6 +260,29 @@ instance Inhabited P.Rational 'Nothing 'Nothing where
 
 --------------------------------------------------------------------------------
 
+instance (Inhabited Rational ('Just '( 'True, l)) ('Just '( 'True, r)))
+  => Clamp          Rational ('Just '( 'True, l)) ('Just '( 'True, r))
+
+instance (Inhabited Rational ('Just '( 'True, l)) 'Nothing)
+  => Clamp          Rational ('Just '( 'True, l)) 'Nothing where
+  clamp = \case
+    x | x <= unwrap min_ -> min_
+      | otherwise -> UnsafeI x
+    where min_ = min
+
+instance (Inhabited Rational 'Nothing ('Just '( 'True, r)))
+  => Clamp          Rational 'Nothing ('Just '( 'True, r)) where
+  clamp = \case
+    x | x >= unwrap max_ -> max_
+      | otherwise -> UnsafeI x
+    where max_ = max
+
+instance (Inhabited Rational 'Nothing 'Nothing)
+  => Clamp          Rational 'Nothing 'Nothing where
+  clamp = UnsafeI
+
+--------------------------------------------------------------------------------
+
 -- OO
 instance
   ( Inhabited Rational ('Just '( 'False, ld)) ('Just '( 'False, rd))

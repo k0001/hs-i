@@ -66,6 +66,8 @@ instance
                   (q, 0) <- pure $ divMod (unwrap a) (unwrap b)
                   from q
 
+instance (Inhabited CIntMax l r) => Clamp CIntMax l r
+
 instance (Inhabited CIntMax ld rd, Inhabited CIntMax lu ru, lu <= ld, rd <= ru)
   => Up CIntMax ld rd lu ru
 

@@ -66,6 +66,8 @@ instance
                   (q, 0) <- pure $ divMod (unwrap a) (unwrap b)
                   from q
 
+instance (Inhabited CUInt l r) => Clamp CUInt l r
+
 instance (Inhabited CUInt ld rd, Inhabited CUInt lu ru, lu <= ld, rd <= ru)
   => Up CUInt ld rd lu ru
 

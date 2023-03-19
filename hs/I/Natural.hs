@@ -83,6 +83,16 @@ instance
 
 --------------------------------------------------------------------------------
 
+instance (Inhabited Natural l ('Just r)) => Clamp Natural l ('Just r)
+
+instance (Inhabited Natural l 'Nothing) => Clamp Natural l 'Nothing where
+  clamp = \case
+    x | x <= unwrap min_ -> min_
+      | otherwise -> UnsafeI x
+    where min_ = min
+
+--------------------------------------------------------------------------------
+
 instance
   ( Inhabited Natural ld ('Just rd)
   , Inhabited Natural lu ('Just ru)

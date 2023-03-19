@@ -66,6 +66,8 @@ instance
                   (q, 0) <- pure $ divMod (unwrap a) (unwrap b)
                   from q
 
+instance (Inhabited Word64 l r) => Clamp Word64 l r
+
 instance (Inhabited Word64 ld rd, Inhabited Word64 lu ru, lu <= ld, rd <= ru)
   => Up Word64 ld rd lu ru
 

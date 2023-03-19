@@ -66,6 +66,8 @@ instance
                   (q, 0) <- pure $ divMod (unwrap a) (unwrap b)
                   from q
 
+instance (Inhabited Word l r) => Clamp Word l r
+
 instance (Inhabited Word ld rd, Inhabited Word lu ru, lu <= ld, rd <= ru)
   => Up Word ld rd lu ru
 

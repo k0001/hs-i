@@ -66,6 +66,8 @@ instance
                   (q, 0) <- pure $ divMod (unwrap a) (unwrap b)
                   from q
 
+instance (Inhabited CPtrdiff l r) => Clamp CPtrdiff l r
+
 instance (Inhabited CPtrdiff ld rd, Inhabited CPtrdiff lu ru, lu <= ld, rd <= ru)
   => Up CPtrdiff ld rd lu ru
 

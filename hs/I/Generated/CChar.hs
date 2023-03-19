@@ -66,6 +66,8 @@ instance
                   (q, 0) <- pure $ divMod (unwrap a) (unwrap b)
                   from q
 
+instance (Inhabited CChar l r) => Clamp CChar l r
+
 instance (Inhabited CChar ld rd, Inhabited CChar lu ru, lu <= ld, rd <= ru)
   => Up CChar ld rd lu ru
 

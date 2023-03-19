@@ -109,6 +109,29 @@ instance Inhabited P.Integer 'Nothing 'Nothing where
 
 --------------------------------------------------------------------------------
 
+instance (Inhabited Integer ('Just l) ('Just r))
+  => Clamp          Integer ('Just l) ('Just r)
+
+instance (Inhabited Integer ('Just l) 'Nothing)
+  => Clamp          Integer ('Just l) 'Nothing where
+  clamp = \case
+    x | x <= unwrap min_ -> min_
+      | otherwise -> UnsafeI x
+    where min_ = min
+
+instance (Inhabited Integer 'Nothing ('Just r))
+  => Clamp          Integer 'Nothing ('Just r) where
+  clamp = \case
+    x | x >= unwrap max_ -> max_
+      | otherwise -> UnsafeI x
+    where max_ = max
+
+instance (Inhabited Integer 'Nothing 'Nothing)
+  => Clamp          Integer 'Nothing 'Nothing where
+  clamp = UnsafeI
+
+--------------------------------------------------------------------------------
+
 instance
   ( Inhabited Integer ('Just ld) ('Just rd)
   , Inhabited Integer ('Just lu) ('Just ru)

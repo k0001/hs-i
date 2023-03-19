@@ -66,6 +66,8 @@ instance
                   (q, 0) <- pure $ divMod (unwrap a) (unwrap b)
                   from q
 
+instance (Inhabited Int32 l r) => Clamp Int32 l r
+
 instance (Inhabited Int32 ld rd, Inhabited Int32 lu ru, lu <= ld, rd <= ru)
   => Up Int32 ld rd lu ru
 

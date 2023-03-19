@@ -66,6 +66,8 @@ instance
                   (q, 0) <- pure $ divMod (unwrap a) (unwrap b)
                   from q
 
+instance (Inhabited CIntPtr l r) => Clamp CIntPtr l r
+
 instance (Inhabited CIntPtr ld rd, Inhabited CIntPtr lu ru, lu <= ld, rd <= ru)
   => Up CIntPtr ld rd lu ru
 

@@ -172,20 +172,23 @@ class (Interval x l r, InhabitedCtx x l r)
   div' a b = mult' a =<< recip' b
   {-# INLINE div' #-}
 
--- | Wrap @x@ in @'I' x l r@, making sure that @x@ is within the interval
--- ends by clamping it to @'MinI' x l r@ if less than @l@, or to
--- @'MaxI' x l r@ if more than @r@.
-clamp
-  :: forall x l r
-  .  ( Known x (MinI x l r) l r
-     , Known x (MaxI x l r) l r
-     , Ord x )
-  => x
-  -> I x l r
-clamp x
-  | x <= unwrap (min @x @l @r) = min
-  | x >= unwrap (max @x @l @r) = max
-  | otherwise                  = UnsafeI x
+class (Inhabited x l r) => Clamp (x :: Type) (l :: L x) (r :: R x) where
+  -- | Wrap @x@ in @'I' x l r@, making sure that @x@ is within the interval
+  -- ends by clamping it to @'MinI' x l r@ if less than @l@, or to
+  -- @'MaxI' x l r@ if more than @r@, if necessary.
+  clamp :: x -> I x l r
+  default clamp
+    :: ( Known x (MinI x l r) l r
+       , Known x (MaxI x l r) l r
+       , Ord x )
+    => x
+    -> I x l r
+  clamp = \case
+    x | x <= unwrap min_ -> min_
+      | x >= unwrap max_ -> max_
+      | otherwise -> UnsafeI x
+    where min_ = min -- for both type-inferrence and memoizing purposes
+          max_ = max
 
 -- | Downcast @'I' x lu ru@ into @'I' x ld rd@ if wrapped @x@ value fits
 -- in @'I' x ld rd@.
