@@ -192,7 +192,10 @@ class (Inhabited x l r) => Clamp (x :: Type) (l :: L x) (r :: R x) where
 
 -- | Downcast @'I' x lu ru@ into @'I' x ld rd@ if wrapped @x@ value fits
 -- in @'I' x ld rd@.
-down :: forall x lu ru ld rd. Inhabited x ld rd => I x lu ru -> Maybe (I x ld rd)
+down :: forall x lu ru ld rd
+     .  (Inhabited x ld rd)
+      => I x lu ru
+      -> Maybe (I x ld rd)
 down = from . unwrap
 {-# INLINE down #-}
 

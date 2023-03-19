@@ -55,17 +55,35 @@ instance
     Dict <- leInteger @l @t
     Dict <- leInteger @t @r
     pure (UnsafeI x)
-  negate' x = do guard (unwrap x /= minBound)
-                 from (P.negate (unwrap x))
-  a `plus'` b = from =<< toIntegralSized (toInteger (unwrap a) +
-                                          toInteger (unwrap b))
-  a `mult'` b = from =<< toIntegralSized (toInteger (unwrap a) *
-                                          toInteger (unwrap b))
-  a `minus'` b = from =<< toIntegralSized (toInteger (unwrap a) -
-                                           toInteger (unwrap b))
-  a `div'` b = do guard (unwrap b /= 0)
-                  (q, 0) <- pure $ divMod (unwrap a) (unwrap b)
-                  from q
+
+  negate' x = do
+    guard (unwrap x /= minBound)
+    from (P.negate (unwrap x))
+
+  a `plus'` b =
+    let a' = unwrap a
+        b' = unwrap b
+    in case a' + b' of
+         x | a' < 0 && b' < 0 && x >= 0 -> Nothing
+           | a' > 0 && b' > 0 && x <  0 -> Nothing
+           | otherwise -> from x
+
+  a `mult'` b =
+     from =<< toIntegralSized (toInteger (unwrap a) *
+                               toInteger (unwrap b))
+
+  a `minus'` b =
+    let a' = unwrap a
+        b' = P.negate (unwrap b)
+    in case a' + b' of
+         x | a' < 0 && b' < 0 && x >= 0 -> Nothing
+           | a' > 0 && b' > 0 && x <  0 -> Nothing
+           | otherwise -> from x
+
+  a `div'` b = do
+    guard (unwrap b /= 0)
+    (q, 0) <- pure $ divMod (unwrap a) (unwrap b)
+    from q
 
 instance (Inhabited CSChar l r) => Clamp CSChar l r
 

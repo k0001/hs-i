@@ -26,7 +26,7 @@ module I
  , Inhabited(..)
  , unwrap
  , wrap
- , clamp
+ , Clamp(..)
  , Up
  , up
  , down
