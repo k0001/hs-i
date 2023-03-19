@@ -57,13 +57,13 @@ instance
     pure (UnsafeI x)
 
   a `plus'` b = do
-     let x = unwrap a + unwrap b
-     guard (x >= unwrap a)
-     from x
+    let x = unwrap a + unwrap b
+    guard (x >= unwrap a)
+    from x
 
-  a `mult'` b =
-     from =<< toIntegralSized (toInteger (unwrap a) *
-                               toInteger (unwrap b))
+  a `mult'` b = do
+    x <- toIntegralSized (toInteger (unwrap a) * toInteger (unwrap b))
+    from x
 
   a `minus'` b = do
     guard (a >= b)

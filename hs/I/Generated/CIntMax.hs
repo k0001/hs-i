@@ -68,9 +68,9 @@ instance
            | a' > 0 && b' > 0 && x <  0 -> Nothing
            | otherwise -> from x
 
-  a `mult'` b =
-     from =<< toIntegralSized (toInteger (unwrap a) *
-                               toInteger (unwrap b))
+  a `mult'` b = do
+    x <- toIntegralSized (toInteger (unwrap a) * toInteger (unwrap b))
+    from x
 
   a `minus'` b =
     let a' = unwrap a
