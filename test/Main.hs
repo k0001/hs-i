@@ -52,6 +52,20 @@ tt_Word8 = testGroup "Word8"
       x <- forAll genWord8
       x === I.unwrap (I.wrap x)
 
+  , testCase "zero" $ do
+      0 @=? I.unwrap (I.zero @Word8 @0 @0)
+      0 @=? I.unwrap (I.zero @Word8 @0 @100)
+      0 @=? I.unwrap (I.zero @Word8 @0 @255)
+
+  , testCase "one" $ do
+      1 @=? I.unwrap (I.one @Word8 @0 @1)
+      1 @=? I.unwrap (I.one @Word8 @0 @100)
+      1 @=? I.unwrap (I.one @Word8 @0 @255)
+
+      1 @=? I.unwrap (I.one @Word8 @1 @1)
+      1 @=? I.unwrap (I.one @Word8 @1 @100)
+      1 @=? I.unwrap (I.one @Word8 @1 @255)
+
   , tt_Word8' @0   @0
   , tt_Word8' @100 @100
   , tt_Word8' @255 @255
@@ -106,16 +120,17 @@ tt_Word8' = testGroup ("Interval [" <> show l <> ", " <> show r <> "]")
         Nothing -> assert (x < l'' || x > r'')
         Just y -> toInteger (I.unwrap y) === x
 
-  , if (l' == 0 && r' == 0) then mzero else
-    pure $ testProperty "div'" $ property $ do
-      a <- forAll $ genI @Word8 @l @r
-      b <- forAll $ Gen.filter (\x -> I.unwrap x /= 0) (genI @Word8 @l @r)
-      let (q, m) = toInteger (I.unwrap a) `divMod` toInteger (I.unwrap b)
-      case I.div' a b of
-        Nothing -> assert (q < l'' || m > r'' || m /= 0 || I.unwrap b == 0)
-        Just y -> do q === toInteger (I.unwrap y)
-                     m === 0
-                     I.unwrap b /== 0
+  , case cmpNat (Proxy @0) (Proxy @r) of
+      LTI -> pure $ testProperty "div'" $ property $ do
+        a <- forAll $ genI @Word8 @l @r
+        b <- forAll $ Gen.filter (\x -> I.unwrap x /= 0) (genI @Word8 @l @r)
+        let (q, m) = toInteger (I.unwrap a) `divMod` toInteger (I.unwrap b)
+        case I.div' a b of
+          Nothing -> assert (q < l'' || m > r'' || m /= 0 || I.unwrap b == 0)
+          Just y -> do q === toInteger (I.unwrap y)
+                       m === 0
+                       I.unwrap b /== 0
+      _ -> mzero
 
   , pure $ testProperty "clamp'" $ property $ do
       x <- forAll $ genWord8
@@ -127,6 +142,23 @@ tt_Word8' = testGroup ("Interval [" <> show l <> ", " <> show r <> "]")
   , pure $ testProperty "with" $ property $ do
       x <- forAll $ genI @Word8 @l @r
       x === I.with x I.known'
+
+  , case cmpNat (Proxy @l) (Proxy @r) of
+      LTI ->
+        [ testProperty "pred" $ property $ do
+            x <- forAll $ genI @Word8 @l @r
+            case I.pred' x of
+              Nothing -> x === l
+              Just y -> do x /== l
+                           I.unwrap y === I.unwrap x - 1
+        , testProperty "succ" $ property $ do
+            x <- forAll $ genI @Word8 @l @r
+            case I.succ' x of
+              Nothing -> x === r
+              Just y -> do x /== r
+                           I.unwrap y === I.unwrap x + 1
+        ]
+      _ -> mzero
 
   ]
   where
