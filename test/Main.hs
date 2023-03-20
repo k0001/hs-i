@@ -1,3 +1,4 @@
+{-# LANGUAGE AllowAmbiguousTypes #-}
 {-# LANGUAGE UndecidableSuperClasses #-}
 
 {-# OPTIONS_GHC -Wno-unused-imports -Wno-unused-top-binds #-}
@@ -39,6 +40,8 @@ tt = testGroup "I"
   [ tt_Word8
   ]
 
+--------------------------------------------------------------------------------
+
 -- checking some constants used below
 _tt_Word8 :: Dict (I.MinL Word8 ~ 0, I.MaxR Word8 ~ 255)
 _tt_Word8 =  Dict
@@ -49,133 +52,91 @@ tt_Word8 = testGroup "Word8"
       x <- forAll genWord8
       x === I.unwrap (I.wrap x)
 
-  , testProperty "from (full range)" $ property $ do
-      x <- forAll genWord8
-      Just x === fmap I.unwrap (I.from @Word8 @0 @255 x)
-
-  , testProperty "from (partial range on left)" $ property $ do
-      x <- forAll genWord8
-      case I.from @_ @0 @9 x of
-        Nothing -> diff x (>) 9
-        Just y -> do diff x (<=) 9
-                     I.unwrap y === x
-
-  , testProperty "from (partial range on right)" $ property $ do
-      x <- forAll genWord8
-      case I.from @Word8 @250 @255 x of
-        Nothing -> diff x (<) 250
-        Just y -> do diff x (>=) 250
-                     I.unwrap y === x
-
-  , testProperty "from (partial range on center)" $ property $ do
-      x <- forAll genWord8
-      case I.from @Word8 @50 @70 x of
-        Nothing -> assert (x < 50 || x > 70)
-        Just y -> do assert (x >= 50 && x <= 70)
-                     I.unwrap y === x
-
-  , testProperty "plus' (partial range on left)" $ property $ do
-      a <- forAll $ genI @Word8 @0 @100
-      b <- forAll $ genI @Word8 @0 @100
-      let x = toInteger (I.unwrap a) + toInteger (I.unwrap b)
-      case I.plus' a b of
-        Nothing -> diff x (>) 100
-        Just y -> toInteger (I.unwrap y) === x
-
-  , testProperty "mult' (partial range on left)" $ property $ do
-      a <- forAll $ genI @Word8 @0 @100
-      b <- forAll $ genI @Word8 @0 @100
-      let x = toInteger (I.unwrap a) * toInteger (I.unwrap b)
-      case I.mult' a b of
-        Nothing -> diff x (>) 100
-        Just y -> toInteger (I.unwrap y) === x
-
-  , testProperty "minus' (partial range on left)" $ property $ do
-      a <- forAll $ genI @Word8 @0 @100
-      b <- forAll $ genI @Word8 @0 @100
-      let x = toInteger (I.unwrap a) - toInteger (I.unwrap b)
-      case I.minus' a b of
-        Nothing -> assert (x < 0 || x > 100)
-        Just y -> toInteger (I.unwrap y) === x
-
-  , testProperty "div' (partial range on left)" $ property $ do
-      a <- forAll $ genI @Word8 @0 @100
-      b <- forAll $ I.up <$> genI @Word8 @1 @100
-      let (q, m) = toInteger (I.unwrap a) `divMod` toInteger (I.unwrap b)
-      case I.div' a b of
-        Nothing -> assert (q < 0 || m > 100 || m /= 0 || I.unwrap b == 0)
-        Just y -> do q === toInteger (I.unwrap y)
-                     m === 0
-                     I.unwrap b /== 0
-
-  , testProperty "plus' (partial range on right)" $ property $ do
-      a <- forAll $ genI @Word8 @100 @255
-      b <- forAll $ genI @Word8 @100 @255
-      let x = toInteger (I.unwrap a) + toInteger (I.unwrap b)
-      case I.plus' a b of
-        Nothing -> assert (x < 100 || x > 255)
-        Just y -> toInteger (I.unwrap y) === x
-
-  , testProperty "mult' (partial range on right)" $ property $ do
-      a <- forAll $ genI @Word8 @100 @255
-      b <- forAll $ genI @Word8 @100 @255
-      let x = toInteger (I.unwrap a) * toInteger (I.unwrap b)
-      case I.mult' a b of
-        Nothing -> assert (x < 100 || x > 255)
-        Just y -> toInteger (I.unwrap y) === x
-
-  , testProperty "minus' (partial range on right)" $ property $ do
-      a <- forAll $ genI @Word8 @100 @255
-      b <- forAll $ genI @Word8 @100 @255
-      let x = toInteger (I.unwrap a) - toInteger (I.unwrap b)
-      case I.minus' a b of
-        Nothing -> assert (x < 100 || x > 255)
-        Just y -> toInteger (I.unwrap y) === x
-
-  , testProperty "div' (partial range on left)" $ property $ do
-      a <- forAll $ genI @Word8 @100 @255
-      b <- forAll $ genI @Word8 @100 @255
-      let (q, m) = toInteger (I.unwrap a) `divMod` toInteger (I.unwrap b)
-      case I.div' a b of
-        Nothing -> assert (q < 100 || m > 255 || m /= 0 || I.unwrap b == 0)
-        Just y -> do q === toInteger (I.unwrap y)
-                     m === 0
-                     I.unwrap b /== 0
-
-  , testProperty "plus' (partial range on center)" $ property $ do
-      a <- forAll $ genI @Word8 @50 @200
-      b <- forAll $ genI @Word8 @50 @200
-      let x = toInteger (I.unwrap a) + toInteger (I.unwrap b)
-      case I.plus' a b of
-        Nothing -> assert (x < 50 || x > 200)
-        Just y -> toInteger (I.unwrap y) === x
-
-  , testProperty "mult' (partial range on center)" $ property $ do
-      a <- forAll $ genI @Word8 @50 @200
-      b <- forAll $ genI @Word8 @50 @200
-      let x = toInteger (I.unwrap a) * toInteger (I.unwrap b)
-      case I.mult' a b of
-        Nothing -> assert (x < 50 || x > 200)
-        Just y -> toInteger (I.unwrap y) === x
-
-  , testProperty "minus' (partial range on center)" $ property $ do
-      a <- forAll $ genI @Word8 @50 @200
-      b <- forAll $ genI @Word8 @50 @200
-      let x = toInteger (I.unwrap a) - toInteger (I.unwrap b)
-      case I.minus' a b of
-        Nothing -> assert (x < 50 || x > 200)
-        Just y -> toInteger (I.unwrap y) === x
-
-  , testProperty "div' (partial range on left)" $ property $ do
-      a <- forAll $ genI @Word8 @50 @200
-      b <- forAll $ genI @Word8 @50 @200
-      let (q, m) = toInteger (I.unwrap a) `divMod` toInteger (I.unwrap b)
-      case I.div' a b of
-        Nothing -> assert (q < 50 || m > 200 || m /= 0 || I.unwrap b == 0)
-        Just y -> do q === toInteger (I.unwrap y)
-                     m === 0
-                     I.unwrap b /== 0
+  , tt_Word8' @0   @0
+  , tt_Word8' @100 @100
+  , tt_Word8' @255 @255
+  , tt_Word8' @0   @255
+  , tt_Word8' @0   @100
+  , tt_Word8' @100 @200
+  , tt_Word8' @200 @255
   ]
+
+tt_Word8'
+  :: forall (l :: I.L Word8) (r :: I.R Word8)
+  .  I.Inhabited Word8 l r
+  => TestTree
+tt_Word8' = testGroup ("Interval [" <> show l <> ", " <> show r <> "]")
+  $ concat
+  [ pure $ testProperty "from" $ property $ do
+      x <- forAll genWord8
+      case I.from @Word8 @l @r x of
+        Nothing -> assert (x < l' || x > r')
+        Just y -> do assert (x >= l' && x <= r')
+                     I.unwrap y === x
+
+  , pure $ testProperty "shove" $ property $ do
+      x <- forAll genWord8
+      let y = I.shove @Word8 @l @r x
+      I.from (I.unwrap y) === Just y
+      if x < l' || x > r'
+         then I.from @Word8 @l @r x === Nothing
+         else I.from @Word8 @l @r x /== Nothing
+
+  , pure $ testProperty "plus'" $ property $ do
+      a <- forAll $ genI @Word8 @l @r
+      b <- forAll $ genI @Word8 @l @r
+      let x = toInteger (I.unwrap a) + toInteger (I.unwrap b)
+      case I.plus' a b of
+        Nothing -> assert (x < l'' || x > r'')
+        Just y -> toInteger (I.unwrap y) === x
+
+  , pure $ testProperty "mult'" $ property $ do
+      a <- forAll $ genI @Word8 @l @r
+      b <- forAll $ genI @Word8 @l @r
+      let x = toInteger (I.unwrap a) * toInteger (I.unwrap b)
+      case I.mult' a b of
+        Nothing -> assert (x < l'' || x > r'')
+        Just y -> toInteger (I.unwrap y) === x
+
+  , pure $ testProperty "minus'" $ property $ do
+      a <- forAll $ genI @Word8 @l @r
+      b <- forAll $ genI @Word8 @l @r
+      let x = toInteger (I.unwrap a) - toInteger (I.unwrap b)
+      case I.minus' a b of
+        Nothing -> assert (x < l'' || x > r'')
+        Just y -> toInteger (I.unwrap y) === x
+
+  , if (l' == 0 && r' == 0) then mzero else
+    pure $ testProperty "div'" $ property $ do
+      a <- forAll $ genI @Word8 @l @r
+      b <- forAll $ Gen.filter (\x -> I.unwrap x /= 0) (genI @Word8 @l @r)
+      let (q, m) = toInteger (I.unwrap a) `divMod` toInteger (I.unwrap b)
+      case I.div' a b of
+        Nothing -> assert (q < l'' || m > r'' || m /= 0 || I.unwrap b == 0)
+        Just y -> do q === toInteger (I.unwrap y)
+                     m === 0
+                     I.unwrap b /== 0
+
+  , pure $ testProperty "clamp'" $ property $ do
+      x <- forAll $ genWord8
+      case I.clamp @Word8 @l @r x of
+        y | x < l' -> I.unwrap y === l'
+          | x > r' -> I.unwrap y === r'
+          | otherwise -> Just y === I.from x
+
+  , pure $ testProperty "with" $ property $ do
+      x <- forAll $ genI @Word8 @l @r
+      I.with x $ \(_ :: Proxy t) ->
+        x === I.known @Word8 @t @l @r
+
+  ]
+  where
+    l   = I.min        :: I Word8 l r
+    l'  = I.unwrap l   :: Word8
+    l'' = toInteger l' :: Integer
+    r   = I.max        :: I Word8 l r
+    r'  = I.unwrap r   :: Word8
+    r'' = toInteger r' :: Integer
 
 --------------------------------------------------------------------------------
 

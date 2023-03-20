@@ -202,8 +202,9 @@ down = from . unwrap
 class (Inhabited x ld rd, Inhabited x lu ru)
   => Up (x :: Type) (ld :: L x) (rd :: R x) (lu :: L x) (ru :: R x)
 
--- | Identity.
-instance (Inhabited x l r, Inhabited x l r) => Up x l r l r
+-- -- | Identity.
+-- instance {-# INCOHERENT #-} (Inhabited x l r, Inhabited x l r)
+--   => Up x l r l r
 
 -- | Upcast @'I' x ld rd@ into @'I' x lu ru@.
 up :: forall x ld rd lu ru. Up x ld rd lu ru => I x ld rd -> I x lu ru
@@ -417,17 +418,17 @@ instance
 
 --------------------------------------------------------------------------------
 
--- | Shove an @x@ into an interval @'I' x l r@.
+-- | Shove an @x@ into an interval @'I' x l r@, somehow.
 --
--- Note: This class is useful for testing purposes. For example, if you want to
--- generate random values of type @'I' x l r@ for testing purposes, all you have
--- to do is generate random values of type @x@ and then 'shove' them
--- into @'I' x l r@.
+-- Note: This class is for testing purposes only. For example, if you want to
+-- generate random values of type @'I' x l r@ for testing purposes, all you
+-- have to do is generate random values of type @x@ and then 'shove' them into
+-- @'I' x l r@.
 class Inhabited x l r => Shove (x :: Type) (l :: L x) (r :: R x) where
-  -- | If the given @x@ fits in @I x l r@ as is, then
-  -- @'id' == 'unwrap' . 'shove'@. Otherwise, somehow shove the @x@ into the
-  -- interval @'I' x l r@ in as much as an uniformly distributed manner as
-  -- possible.
+  -- | No guarantees are made about the @x@ value that ends up in @'I' x l r@.
+  -- In particular, you can't expect @'id' == 'unwrap' . 'shove'@, not even
+  -- for @x@ values for which @'from' == 'Just'@. All 'shove' guarantees is
+  -- a distribution as uniform as possible.
   shove :: x -> I x l r
 
 --------------------------------------------------------------------------------

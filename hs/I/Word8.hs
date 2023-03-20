@@ -105,8 +105,7 @@ instance (Inhabited Word8 l r, l <= 1, 1 <= r) => One Word8 l r where
   one = UnsafeI 1
 
 instance forall l r. (Inhabited Word8 l r) => Shove Word8 l r where
-  shove = \x -> fromMaybe (error "shove(Word8): impossible") $
-                  from $ fromInteger (mod (toInteger x) (r - l + 1) + l)
+  shove = \x -> UnsafeI $ fromInteger (mod (toInteger x) (r - l + 1) + l)
     where l = toInteger (unwrap (min @Word8 @l @r))
           r = toInteger (unwrap (max @Word8 @l @r))
 

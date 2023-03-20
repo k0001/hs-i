@@ -106,8 +106,7 @@ instance (Inhabited CUInt l r, l <= 1, 1 <= r) => One CUInt l r where
   one = UnsafeI 1
 
 instance forall l r. (Inhabited CUInt l r) => Shove CUInt l r where
-  shove = \x -> fromMaybe (error "shove(CUInt): impossible") $
-                  from $ fromInteger (mod (toInteger x) (r - l + 1) + l)
+  shove = \x -> UnsafeI $ fromInteger (mod (toInteger x) (r - l + 1) + l)
     where l = toInteger (unwrap (min @CUInt @l @r))
           r = toInteger (unwrap (max @CUInt @l @r))
 

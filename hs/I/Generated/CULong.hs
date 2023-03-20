@@ -106,8 +106,7 @@ instance (Inhabited CULong l r, l <= 1, 1 <= r) => One CULong l r where
   one = UnsafeI 1
 
 instance forall l r. (Inhabited CULong l r) => Shove CULong l r where
-  shove = \x -> fromMaybe (error "shove(CULong): impossible") $
-                  from $ fromInteger (mod (toInteger x) (r - l + 1) + l)
+  shove = \x -> UnsafeI $ fromInteger (mod (toInteger x) (r - l + 1) + l)
     where l = toInteger (unwrap (min @CULong @l @r))
           r = toInteger (unwrap (max @CULong @l @r))
 

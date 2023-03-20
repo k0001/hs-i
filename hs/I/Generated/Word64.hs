@@ -106,8 +106,7 @@ instance (Inhabited Word64 l r, l <= 1, 1 <= r) => One Word64 l r where
   one = UnsafeI 1
 
 instance forall l r. (Inhabited Word64 l r) => Shove Word64 l r where
-  shove = \x -> fromMaybe (error "shove(Word64): impossible") $
-                  from $ fromInteger (mod (toInteger x) (r - l + 1) + l)
+  shove = \x -> UnsafeI $ fromInteger (mod (toInteger x) (r - l + 1) + l)
     where l = toInteger (unwrap (min @Word64 @l @r))
           r = toInteger (unwrap (max @Word64 @l @r))
 
