@@ -13,15 +13,19 @@ import Data.Proxy
 import Data.Word
 import Data.Type.Ord
 import GHC.Real (Ratio((:%)))
-import GHC.TypeNats
+import GHC.TypeLits qualified as L
 import Hedgehog (MonadGen, forAll, property, assert, diff, (===), (/==))
 import qualified Hedgehog.Gen as Gen
 import qualified Hedgehog.Range as Range
+import KindInteger qualified as KI
+import KindRational qualified as KR
+import Numeric.Natural
 import Test.Tasty (TestTree, testGroup)
 import qualified Test.Tasty as Tasty
 import Test.Tasty.HUnit (testCase, (@?=), (@=?))
 import Test.Tasty.Hedgehog (HedgehogTestLimit (..), testProperty)
 import qualified Test.Tasty.Runners as Tasty
+import Unsafe.Coerce (unsafeCoerce)
 
 import I (I)
 import I qualified
@@ -67,6 +71,8 @@ tt_Word8 = testGroup "Word8"
       1 @=? I.unwrap (I.one @Word8 @1 @255)
 
   , tt_Word8' @0   @0
+  , tt_Word8' @0   @1
+  , tt_Word8' @1   @1
   , tt_Word8' @100 @100
   , tt_Word8' @255 @255
   , tt_Word8' @0   @255
@@ -120,7 +126,7 @@ tt_Word8' = testGroup ("Interval [" <> show l <> ", " <> show r <> "]")
         Nothing -> assert (x < l'' || x > r'')
         Just y -> toInteger (I.unwrap y) === x
 
-  , case cmpNat (Proxy @0) (Proxy @r) of
+  , case L.cmpNat (Proxy @0) (Proxy @r) of
       EQI -> mzero
       _ -> pure $ testProperty "div'" $ property $ do
         a <- forAll $ genIWord8 @l @r
@@ -142,7 +148,7 @@ tt_Word8' = testGroup ("Interval [" <> show l <> ", " <> show r <> "]")
       x <- forAll $ genIWord8 @l @r
       x === I.with x I.known'
 
-  , case cmpNat (Proxy @l) (Proxy @r) of
+  , case L.cmpNat (Proxy @l) (Proxy @r) of
       LTI ->
         [ testProperty "pred" $ property $ do
             x <- forAll $ genIWord8 @l @r
@@ -157,6 +163,16 @@ tt_Word8' = testGroup ("Interval [" <> show l <> ", " <> show r <> "]")
               Just y -> do x /== r
                            I.unwrap y === I.unwrap x + 1
         ]
+      _ -> mzero
+
+  , case L.cmpNat (Proxy @l) (Proxy @0) of
+      EQI -> pure $ testCase "zero" $
+               0 @=? I.unwrap (I.zero @Word8 @l @r)
+      _ -> mzero
+
+  , case (leNatural @l @1, leNatural @1 @r) of
+      (Just Dict, Just Dict) -> pure $ testCase "one" $ do
+        1 @=? I.unwrap (I.one @Word8 @l @r)
       _ -> mzero
 
   ]
@@ -210,3 +226,22 @@ genIRational
   :: forall l r m. (MonadGen m, I.Shove Rational l r) => m (I Rational l r)
 genIRational = I.shove <$> genRational
 
+--------------------------------------------------------------------------------
+
+leNatural
+  :: forall a b
+  .  (L.KnownNat a, L.KnownNat b)
+  => Maybe (Dict (a L.<= b))
+leNatural = case L.cmpNat (Proxy @a) (Proxy @b) of
+  L.LTI -> Just $ unsafeCoerce (Dict @())
+  L.EQI -> Just $ unsafeCoerce (Dict @())
+  L.GTI -> Nothing
+
+leInteger
+  :: forall (a :: KI.Integer) (b :: KI.Integer)
+  .  (KI.KnownInteger a, KI.KnownInteger b)
+  => Maybe (Dict (a L.<= b))
+leInteger = case KI.cmpInteger (Proxy @a) (Proxy @b) of
+  L.LTI -> Just $ unsafeCoerce (Dict @())
+  L.EQI -> Just $ unsafeCoerce (Dict @())
+  L.GTI -> Nothing

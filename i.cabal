@@ -80,6 +80,8 @@ test-suite test
     i,
     constraints,
     hedgehog,
+    kind-integer,
+    kind-rational,
     tasty,
     tasty-hedgehog,
     tasty-hunit,
