@@ -52,16 +52,16 @@ instance forall l r.
   , InhabitedCtx P.Integer ('Just l) ('Just r)
   ) => Inhabited P.Integer ('Just l) ('Just r) where
   inhabitant = min
-  from x | K.SomeInteger (_ :: Proxy x) <- K.someIntegerVal x = do
-    Dict <- leInteger @l @x
-    Dict <- leInteger @x @r
-    pure (UnsafeI x)
+  from = \x -> UnsafeI x <$ guard (l <= x && x <= r)
+    where l = K.integerVal (Proxy @l)
+          r = K.integerVal (Proxy @r)
   negate' = from . P.negate . unwrap
   a `plus'` b = from (unwrap a + unwrap b)
   a `mult'` b = from (unwrap a * unwrap b)
   a `minus'` b = from (unwrap a - unwrap b)
   a `div'` b = do guard (unwrap b /= 0)
-                  (q, 0) <- pure $ divMod (unwrap a) (unwrap b)
+                  let (q, m) = divMod (unwrap a) (unwrap b)
+                  guard (m == 0)
                   from q
 
 instance forall l.
@@ -69,15 +69,15 @@ instance forall l.
   , InhabitedCtx P.Integer ('Just l) 'Nothing
   ) => Inhabited P.Integer ('Just l) 'Nothing where
   inhabitant = min
-  from x | K.SomeInteger (_ :: Proxy x) <- K.someIntegerVal x = do
-    Dict <- leInteger @l @x
-    pure (UnsafeI x)
+  from = \x -> UnsafeI x <$ guard (l <= x)
+    where l = K.integerVal (Proxy @l)
   negate' = from . P.negate . unwrap
   a `plus'` b = from (unwrap a + unwrap b)
   a `mult'` b = from (unwrap a * unwrap b)
   a `minus'` b = from (unwrap a - unwrap b)
   a `div'` b = do guard (unwrap b /= 0)
-                  (q, 0) <- pure $ divMod (unwrap a) (unwrap b)
+                  let (q, m) = divMod (unwrap a) (unwrap b)
+                  guard (m == 0)
                   from q
 
 instance forall r.
@@ -85,15 +85,15 @@ instance forall r.
   , InhabitedCtx P.Integer 'Nothing ('Just r)
   ) => Inhabited P.Integer 'Nothing ('Just r) where
   inhabitant = max
-  from x | K.SomeInteger (_ :: Proxy x) <- K.someIntegerVal x = do
-    Dict <- leInteger @x @r
-    pure (UnsafeI x)
+  from = \x -> UnsafeI x <$ guard (x <= r)
+    where r = K.integerVal (Proxy @r)
   negate' = from . P.negate . unwrap
   a `plus'` b = from (unwrap a + unwrap b)
   a `mult'` b = from (unwrap a * unwrap b)
   a `minus'` b = from (unwrap a - unwrap b)
   a `div'` b = do guard (unwrap b /= 0)
-                  (q, 0) <- pure $ divMod (unwrap a) (unwrap b)
+                  let (q, m) = divMod (unwrap a) (unwrap b)
+                  guard (m == 0)
                   from q
 
 instance Inhabited P.Integer 'Nothing 'Nothing where
@@ -104,7 +104,8 @@ instance Inhabited P.Integer 'Nothing 'Nothing where
   a `mult'` b = pure (a `mult` b)
   a `minus'` b = pure (a `minus` b)
   a `div'` b = do guard (unwrap b /= 0)
-                  (q, 0) <- pure $ divMod (unwrap a) (unwrap b)
+                  let (q, m) = divMod (unwrap a) (unwrap b)
+                  guard (m == 0)
                   from q
 
 --------------------------------------------------------------------------------

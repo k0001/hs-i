@@ -13,7 +13,7 @@ import Data.Maybe
 import Data.Proxy
 import Data.Type.Ord
 import Numeric.Natural (Natural)
-import GHC.TypeLits qualified as L
+import GHC.TypeNats qualified as N
 import KindInteger (type (/=))
 import Prelude hiding (min, max, div, succ)
 
@@ -30,8 +30,8 @@ instance forall l r.
   ( IntervalCtx Natural l ('Just r)
   ) => Interval Natural l ('Just r) where
   type IntervalCtx Natural l ('Just r) =
-    ( L.KnownNat l
-    , L.KnownNat r
+    ( N.KnownNat l
+    , N.KnownNat r
     , MinT Natural <= l
     , l <= r )
   type MinI Natural l ('Just r) = l
@@ -40,7 +40,7 @@ instance forall l r.
 instance forall l.
   ( IntervalCtx Natural l 'Nothing
   ) => Interval Natural l 'Nothing where
-  type IntervalCtx Natural l 'Nothing = (L.KnownNat l, MinT Natural <= l)
+  type IntervalCtx Natural l 'Nothing = (N.KnownNat l, MinT Natural <= l)
   type MinI Natural l 'Nothing = l
 
 --------------------------------------------------------------------------------
@@ -50,11 +50,9 @@ instance
   ) => Inhabited Natural l ('Just r) where
   type InhabitedCtx Natural l ('Just r) = ()
   inhabitant = min
-  from x = do
-    L.SomeNat (_ :: Proxy x) <- L.someNatVal (toInteger x)
-    Dict <- leNatural @l @x
-    Dict <- leNatural @x @r
-    pure (UnsafeI x)
+  from = \x -> UnsafeI x <$ guard (l <= x && x <= r)
+    where l = N.natVal (Proxy @l)
+          r = N.natVal (Proxy @r)
   a `plus'` b = from (unwrap a + unwrap b)
   a `mult'` b = from (unwrap a * unwrap b)
   a `minus'` b = from =<< toIntegralSized (toInteger (unwrap a) -
@@ -69,10 +67,8 @@ instance
   ) => Inhabited Natural l 'Nothing where
   type InhabitedCtx Natural l 'Nothing = ()
   inhabitant = min
-  from x = do
-    L.SomeNat (_ :: Proxy x) <- L.someNatVal (toInteger x)
-    Dict <- leNatural @l @x
-    pure (UnsafeI x)
+  from = \x -> UnsafeI x <$ guard (l <= x)
+    where l = N.natVal (Proxy @l)
   a `plus'` b = pure (a `plus` b)
   a `mult'` b = pure (a `mult` b)
   a `minus'` b = from =<< toIntegralSized (toInteger (unwrap a) -
@@ -111,31 +107,33 @@ instance
 instance forall l r t.
   ( Inhabited Natural l ('Just r), KnownCtx Natural l ('Just r) t
   ) => Known Natural l ('Just r) t where
-  type KnownCtx Natural l ('Just r) t = (L.KnownNat t, l <= t, t <= r)
-  known' = UnsafeI . fromInteger . L.natVal
+  type KnownCtx Natural l ('Just r) t = (N.KnownNat t, l <= t, t <= r)
+  known' = UnsafeI . N.natVal
 
 instance forall t l.
   ( Inhabited Natural l 'Nothing, KnownCtx Natural l 'Nothing t
   ) => Known Natural l 'Nothing t where
-  type KnownCtx Natural l 'Nothing t = (L.KnownNat t, l <= t)
-  known' = UnsafeI . fromInteger . L.natVal
+  type KnownCtx Natural l 'Nothing t = (N.KnownNat t, l <= t)
+  known' = UnsafeI . N.natVal
 
 --------------------------------------------------------------------------------
 
 instance forall l r. (Inhabited Natural l ('Just r))
   => With Natural l ('Just r) where
-  with x g = fromMaybe (error "I.with(Natural): impossible") $ do
-    L.SomeNat (pt :: Proxy t) <- L.someNatVal (toInteger (unwrap x))
-    Dict <- leNatural @l @t
-    Dict <- leNatural @t @r
-    pure (g pt)
+  with x g = case N.someNatVal (unwrap x) of
+    N.SomeNat (pt :: Proxy t) ->
+      fromMaybe (error "I.with(Natural): impossible") $ do
+        Dict <- leNatural @l @t
+        Dict <- leNatural @t @r
+        pure (g pt)
 
 instance forall l. (Inhabited Natural l 'Nothing)
   => With Natural l 'Nothing where
-  with x g = fromMaybe (error "I.with(Natural): impossible") $ do
-    L.SomeNat (pt :: Proxy t) <- L.someNatVal (toInteger (unwrap x))
-    Dict <- leNatural @l @t
-    pure (g pt)
+  with x g = case N.someNatVal (unwrap x) of
+    N.SomeNat (pt :: Proxy t) ->
+      fromMaybe (error "I.with(Natural): impossible") $ do
+        Dict <- leNatural @l @t
+        pure (g pt)
 
 --------------------------------------------------------------------------------
 
