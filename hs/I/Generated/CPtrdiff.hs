@@ -90,10 +90,10 @@ instance (Inhabited CPtrdiff l r) => Clamp CPtrdiff l r
 instance (Inhabited CPtrdiff ld rd, Inhabited CPtrdiff lu ru, lu <= ld, rd <= ru)
   => Up CPtrdiff ld rd lu ru
 
-instance forall t l r.
-  ( Inhabited CPtrdiff l r, KnownCtx CPtrdiff t l r
-  ) => Known CPtrdiff t l r where
-  type KnownCtx CPtrdiff t l r = (K.KnownInteger t, l <= t, t <= r)
+instance forall l r t.
+  ( Inhabited CPtrdiff l r, KnownCtx CPtrdiff l r t
+  ) => Known CPtrdiff l r t where
+  type KnownCtx CPtrdiff l r t = (K.KnownInteger t, l <= t, t <= r)
   known' = UnsafeI . fromInteger . K.integerVal
 
 instance forall l r. (Inhabited CPtrdiff l r) => With CPtrdiff l r where

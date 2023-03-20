@@ -79,10 +79,10 @@ instance (Inhabited Word8 l r) => Clamp Word8 l r
 instance (Inhabited Word8 ld rd, Inhabited Word8 lu ru, lu <= ld, rd <= ru)
   => Up Word8 ld rd lu ru
 
-instance forall t l r.
-  ( Inhabited Word8 l r, KnownCtx Word8 t l r
-  ) => Known Word8 t l r where
-  type KnownCtx Word8 t l r = (L.KnownNat t, l <= t, t <= r)
+instance forall l r t.
+  ( Inhabited Word8 l r, KnownCtx Word8 l r t
+  ) => Known Word8 l r t where
+  type KnownCtx Word8 l r t = (L.KnownNat t, l <= t, t <= r)
   known' = UnsafeI . fromInteger . L.natVal
 
 instance forall l r. (Inhabited Word8 l r) => With Word8 l r where

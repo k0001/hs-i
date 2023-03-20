@@ -80,10 +80,10 @@ instance (Inhabited CUIntMax l r) => Clamp CUIntMax l r
 instance (Inhabited CUIntMax ld rd, Inhabited CUIntMax lu ru, lu <= ld, rd <= ru)
   => Up CUIntMax ld rd lu ru
 
-instance forall t l r.
-  ( Inhabited CUIntMax l r, KnownCtx CUIntMax t l r
-  ) => Known CUIntMax t l r where
-  type KnownCtx CUIntMax t l r = (L.KnownNat t, l <= t, t <= r)
+instance forall l r t.
+  ( Inhabited CUIntMax l r, KnownCtx CUIntMax l r t
+  ) => Known CUIntMax l r t where
+  type KnownCtx CUIntMax l r t = (L.KnownNat t, l <= t, t <= r)
   known' = UnsafeI . fromInteger . L.natVal
 
 instance forall l r. (Inhabited CUIntMax l r) => With CUIntMax l r where

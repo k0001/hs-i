@@ -90,10 +90,10 @@ instance (Inhabited CIntMax l r) => Clamp CIntMax l r
 instance (Inhabited CIntMax ld rd, Inhabited CIntMax lu ru, lu <= ld, rd <= ru)
   => Up CIntMax ld rd lu ru
 
-instance forall t l r.
-  ( Inhabited CIntMax l r, KnownCtx CIntMax t l r
-  ) => Known CIntMax t l r where
-  type KnownCtx CIntMax t l r = (K.KnownInteger t, l <= t, t <= r)
+instance forall l r t.
+  ( Inhabited CIntMax l r, KnownCtx CIntMax l r t
+  ) => Known CIntMax l r t where
+  type KnownCtx CIntMax l r t = (K.KnownInteger t, l <= t, t <= r)
   known' = UnsafeI . fromInteger . K.integerVal
 
 instance forall l r. (Inhabited CIntMax l r) => With CIntMax l r where

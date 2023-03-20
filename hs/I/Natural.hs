@@ -108,16 +108,16 @@ instance
 
 --------------------------------------------------------------------------------
 
-instance forall t l r.
-  ( Inhabited Natural l ('Just r), KnownCtx Natural t l ('Just r)
-  ) => Known Natural t l ('Just r) where
-  type KnownCtx Natural t l ('Just r) = (L.KnownNat t, l <= t, t <= r)
+instance forall l r t.
+  ( Inhabited Natural l ('Just r), KnownCtx Natural l ('Just r) t
+  ) => Known Natural l ('Just r) t where
+  type KnownCtx Natural l ('Just r) t = (L.KnownNat t, l <= t, t <= r)
   known' = UnsafeI . fromInteger . L.natVal
 
 instance forall t l.
-  ( Inhabited Natural l 'Nothing, KnownCtx Natural t l 'Nothing
-  ) => Known Natural t l 'Nothing where
-  type KnownCtx Natural t l 'Nothing = (L.KnownNat t, l <= t)
+  ( Inhabited Natural l 'Nothing, KnownCtx Natural l 'Nothing t
+  ) => Known Natural l 'Nothing t where
+  type KnownCtx Natural l 'Nothing t = (L.KnownNat t, l <= t)
   known' = UnsafeI . fromInteger . L.natVal
 
 --------------------------------------------------------------------------------

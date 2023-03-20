@@ -80,10 +80,10 @@ instance (Inhabited CUIntPtr l r) => Clamp CUIntPtr l r
 instance (Inhabited CUIntPtr ld rd, Inhabited CUIntPtr lu ru, lu <= ld, rd <= ru)
   => Up CUIntPtr ld rd lu ru
 
-instance forall t l r.
-  ( Inhabited CUIntPtr l r, KnownCtx CUIntPtr t l r
-  ) => Known CUIntPtr t l r where
-  type KnownCtx CUIntPtr t l r = (L.KnownNat t, l <= t, t <= r)
+instance forall l r t.
+  ( Inhabited CUIntPtr l r, KnownCtx CUIntPtr l r t
+  ) => Known CUIntPtr l r t where
+  type KnownCtx CUIntPtr l r t = (L.KnownNat t, l <= t, t <= r)
   known' = UnsafeI . fromInteger . L.natVal
 
 instance forall l r. (Inhabited CUIntPtr l r) => With CUIntPtr l r where

@@ -90,10 +90,10 @@ instance (Inhabited CLong l r) => Clamp CLong l r
 instance (Inhabited CLong ld rd, Inhabited CLong lu ru, lu <= ld, rd <= ru)
   => Up CLong ld rd lu ru
 
-instance forall t l r.
-  ( Inhabited CLong l r, KnownCtx CLong t l r
-  ) => Known CLong t l r where
-  type KnownCtx CLong t l r = (K.KnownInteger t, l <= t, t <= r)
+instance forall l r t.
+  ( Inhabited CLong l r, KnownCtx CLong l r t
+  ) => Known CLong l r t where
+  type KnownCtx CLong l r t = (K.KnownInteger t, l <= t, t <= r)
   known' = UnsafeI . fromInteger . K.integerVal
 
 instance forall l r. (Inhabited CLong l r) => With CLong l r where

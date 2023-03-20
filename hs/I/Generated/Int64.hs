@@ -90,10 +90,10 @@ instance (Inhabited Int64 l r) => Clamp Int64 l r
 instance (Inhabited Int64 ld rd, Inhabited Int64 lu ru, lu <= ld, rd <= ru)
   => Up Int64 ld rd lu ru
 
-instance forall t l r.
-  ( Inhabited Int64 l r, KnownCtx Int64 t l r
-  ) => Known Int64 t l r where
-  type KnownCtx Int64 t l r = (K.KnownInteger t, l <= t, t <= r)
+instance forall l r t.
+  ( Inhabited Int64 l r, KnownCtx Int64 l r t
+  ) => Known Int64 l r t where
+  type KnownCtx Int64 l r t = (K.KnownInteger t, l <= t, t <= r)
   known' = UnsafeI . fromInteger . K.integerVal
 
 instance forall l r. (Inhabited Int64 l r) => With Int64 l r where

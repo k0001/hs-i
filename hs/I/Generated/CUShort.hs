@@ -80,10 +80,10 @@ instance (Inhabited CUShort l r) => Clamp CUShort l r
 instance (Inhabited CUShort ld rd, Inhabited CUShort lu ru, lu <= ld, rd <= ru)
   => Up CUShort ld rd lu ru
 
-instance forall t l r.
-  ( Inhabited CUShort l r, KnownCtx CUShort t l r
-  ) => Known CUShort t l r where
-  type KnownCtx CUShort t l r = (L.KnownNat t, l <= t, t <= r)
+instance forall l r t.
+  ( Inhabited CUShort l r, KnownCtx CUShort l r t
+  ) => Known CUShort l r t where
+  type KnownCtx CUShort l r t = (L.KnownNat t, l <= t, t <= r)
   known' = UnsafeI . fromInteger . L.natVal
 
 instance forall l r. (Inhabited CUShort l r) => With CUShort l r where

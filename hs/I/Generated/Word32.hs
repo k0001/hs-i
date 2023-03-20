@@ -80,10 +80,10 @@ instance (Inhabited Word32 l r) => Clamp Word32 l r
 instance (Inhabited Word32 ld rd, Inhabited Word32 lu ru, lu <= ld, rd <= ru)
   => Up Word32 ld rd lu ru
 
-instance forall t l r.
-  ( Inhabited Word32 l r, KnownCtx Word32 t l r
-  ) => Known Word32 t l r where
-  type KnownCtx Word32 t l r = (L.KnownNat t, l <= t, t <= r)
+instance forall l r t.
+  ( Inhabited Word32 l r, KnownCtx Word32 l r t
+  ) => Known Word32 l r t where
+  type KnownCtx Word32 l r t = (L.KnownNat t, l <= t, t <= r)
   known' = UnsafeI . fromInteger . L.natVal
 
 instance forall l r. (Inhabited Word32 l r) => With Word32 l r where

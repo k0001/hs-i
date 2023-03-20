@@ -158,32 +158,32 @@ instance
 
 --------------------------------------------------------------------------------
 
-instance forall t l r.
+instance forall l r t.
   ( Inhabited P.Integer ('Just l) ('Just r)
-  , KnownCtx P.Integer t ('Just l) ('Just r)
-  ) => Known P.Integer t ('Just l) ('Just r) where
-  type KnownCtx P.Integer t ('Just l) ('Just r) =
+  , KnownCtx P.Integer ('Just l) ('Just r) t
+  ) => Known P.Integer ('Just l) ('Just r) t where
+  type KnownCtx P.Integer ('Just l) ('Just r) t =
     (K.KnownInteger t, l <= t, t <= r)
   known' = UnsafeI . K.integerVal
 
 instance forall t l.
   ( Inhabited P.Integer ('Just l) 'Nothing
-  , KnownCtx P.Integer t ('Just l) 'Nothing
-  ) => Known P.Integer t ('Just l) 'Nothing where
-  type KnownCtx P.Integer t ('Just l) 'Nothing = (K.KnownInteger t, l <= t)
+  , KnownCtx P.Integer ('Just l) 'Nothing t
+  ) => Known P.Integer ('Just l) 'Nothing t where
+  type KnownCtx P.Integer ('Just l) 'Nothing t = (K.KnownInteger t, l <= t)
   known' = UnsafeI . K.integerVal
 
 instance forall t r.
   ( Inhabited P.Integer 'Nothing ('Just r)
-  , KnownCtx P.Integer t 'Nothing ('Just r)
-  ) => Known P.Integer t 'Nothing ('Just r) where
-  type KnownCtx P.Integer t 'Nothing ('Just r) = (K.KnownInteger t, t <= r)
+  , KnownCtx P.Integer 'Nothing ('Just r) t
+  ) => Known P.Integer 'Nothing ('Just r) t where
+  type KnownCtx P.Integer 'Nothing ('Just r) t = (K.KnownInteger t, t <= r)
   known' = UnsafeI . K.integerVal
 
 instance forall t.
-  ( KnownCtx P.Integer t 'Nothing 'Nothing
-  ) => Known P.Integer t 'Nothing 'Nothing where
-  type KnownCtx P.Integer t 'Nothing 'Nothing = K.KnownInteger t
+  ( KnownCtx P.Integer 'Nothing 'Nothing t
+  ) => Known P.Integer 'Nothing 'Nothing t where
+  type KnownCtx P.Integer 'Nothing 'Nothing t = K.KnownInteger t
   known' = UnsafeI . K.integerVal
 
 --------------------------------------------------------------------------------

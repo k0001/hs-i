@@ -49,12 +49,12 @@ type role I nominal nominal nominal
 -- | A value of type @x@ known to be within the __i__nterval determined
 -- by the left end @l@ and right end @r@.
 newtype I (x :: Type) (l :: L x) (r :: R x) = UnsafeI x
-  -- ^ For @'UnsafeI' x@ to be safe, @'Known' x t l r@ needs to be satisfied,
+  -- ^ For @'UnsafeI' x@ to be safe, @'Known' x l r t@ needs to be satisfied,
   -- with @t@ being the type-level representation of the value of type @x@.
   deriving newtype (Eq, Ord, Show)
 
 -- | The kind of the __t__ype-level representation of @x@ in @'I' x l r@,
--- as it appears in @'Known' x t l r@.
+-- as it appears in @'Known' x l r t@.
 type family T (x :: Type) :: k
 
 -- | Type-level verison of @__'minBound'__ :: x@. If @x@ is unbounded on the
@@ -178,8 +178,8 @@ class (Inhabited x l r) => Clamp (x :: Type) (l :: L x) (r :: R x) where
   -- @'MaxI' x l r@ if more than @r@, if necessary.
   clamp :: x -> I x l r
   default clamp
-    :: ( Known x (MinI x l r) l r
-       , Known x (MaxI x l r) l r
+    :: ( Known x l r (MinI x l r)
+       , Known x l r (MaxI x l r)
        , Ord x )
     => x
     -> I x l r
@@ -278,7 +278,7 @@ class (Inhabited x l r) => Div (x :: Type) (l :: L x) (r :: R x) where
 single
   :: forall x l r
   .  ( MinI x l r ~ MaxI x l r
-     , Known x (MinI x l r) l r )
+     , Known x l r (MinI x l r) )
   => I x l r
 single = inhabitant
 {-# INLINE single #-}
@@ -290,12 +290,12 @@ single = inhabitant
 -- 'KnownCtx'. By doing so, when an instance of @'Known' x l r@ is
 -- satisfied, @'KnownCtx' x l r@ is satisfied as well.
 class
-  ( Inhabited x l r, KnownCtx x t l r
-  ) => Known (x :: Type) (t :: T x) (l :: L x) (r :: R x) where
+  ( Inhabited x l r, KnownCtx x l r t
+  ) => Known (x :: Type) (l :: L x) (r :: R x) (t :: T x) where
   -- | Constraints to be satisfied by @t@ if it is known to be within
   -- the @'I' x l r@ interval.
-  type KnownCtx x t l r :: Constraint
-  type KnownCtx x t l r = ()
+  type KnownCtx x l r t :: Constraint
+  type KnownCtx x l r t = ()
   -- | Obtain a term-level representation of @t@ as @'I' x l r@.
   --
   -- Also consider using 'known', an alternative version of this function
@@ -307,13 +307,13 @@ class
 --
 -- @
 -- > :type 'known'
--- /'known' :: forall __{__x :: 'Type'__}__ (__t__ :: 'T' x) (__l__ :: 'L' x) (__r__ :: 'R' x). 'Known' x t l r => 'I' x l r/
+-- /'known' :: forall __{__x :: 'Type'__}__ (__t__ :: 'T' x) (__l__ :: 'L' x) (__r__ :: 'R' x). 'Known' x l r t => 'I' x l r/
 --
--- > :type 'known' \@55 :: 'Known' 'Word8' 55 l r => 'I' 'Word8' l r
--- /'known' \@55 :: 'Known' 'Word8' 55 l r => 'I' 'Word8' l r/
+-- > :type 'known' \@55 :: 'Known' 'Word8' l r 55 => 'I' 'Word8' l r
+-- /'known' \@55 :: 'Known' 'Word8' l r 55 => 'I' 'Word8' l r/
 --
--- > :type 'known' \@55 \@33 :: 'Known' 'Word8' 55 33 r => 'I' 'Word8' 33 r
--- /'known' \@55 \@33 :: 'Known' 'Word8' 55 33 r => 'I' 'Word8' 33 r/
+-- > :type 'known' \@55 \@33 :: 'Known' 'Word8' 33 r 55 => 'I' 'Word8' 33 r
+-- /'known' \@55 \@33 :: 'Known' 'Word8' 33 r 55 => 'I' 'Word8' 33 r/
 --
 -- > :type 'known' \@55 \@33 \@77 :: 'I' 'Word8' 33 77
 -- /'known' \@55 \@33 \@77 :: 'I' 'Word8' 33 77 :: 'I' 'Word8' 33 77/
@@ -321,12 +321,12 @@ class
 -- > 'known' \@55 \@33 \@77 :: 'I' 'Word8' 33 77
 -- /55/
 -- @
-known :: forall {x} t l r. Known x t l r => I x l r
+known :: forall {x} t l r. Known x l r t => I x l r
 known = known' (Proxy @t)
 {-# INLINE known #-}
 
 -- | Proof that @'I' x l r@ contains a value of type @x@ whose
--- type-level representation @t :: 'T' x@ satisfies a @'Known' x t l r@.
+-- type-level representation @t :: 'T' x@ satisfies a @'Known' x l r t@.
 
 -- TODO: The 'with' method belongs in the 'Inhabited' class, but I can't
 -- get it to type-check, so it's here in this separate 'With' class.
@@ -340,7 +340,7 @@ class (Inhabited x l r) => With (x :: Type) (l :: L x) (r :: R x) where
   --     @
   --     x  ==  'with' x 'known''
   --     @
-  with :: I x l r -> (forall (t :: T x). Known x t l r => Proxy t -> b) -> b
+  with :: I x l r -> (forall (t :: T x). Known x l r t => Proxy t -> b) -> b
 
 -- | Wrap the given @x@ in the interval @'I' x ('MinL' x) ('MaxR' x)@.
 --
@@ -381,16 +381,16 @@ unwrap = coerce
 --------------------------------------------------------------------------------
 
 -- | Minimum value in the interval, if @'MinI' x@ is defined.
-min :: forall x l r. Known x (MinI x l r) l r => I x l r
+min :: forall x l r. Known x l r (MinI x l r) => I x l r
 min = known @(MinI x l r)
 
 -- | Maximum value in the interval, if @'MaxI' x@ is defined.
-max :: forall x l r. Known x (MaxI x l r) l r => I x l r
+max :: forall x l r. Known x l r (MaxI x l r) => I x l r
 max = known @(MaxI x l r)
 
 instance
-  ( Known x (MinI x l r) l r
-  , Known x (MaxI x l r) l r
+  ( Known x l r (MinI x l r)
+  , Known x l r (MaxI x l r)
   ) => Bounded (I x l r) where
   minBound = min
   maxBound = max

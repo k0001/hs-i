@@ -90,10 +90,10 @@ instance (Inhabited CShort l r) => Clamp CShort l r
 instance (Inhabited CShort ld rd, Inhabited CShort lu ru, lu <= ld, rd <= ru)
   => Up CShort ld rd lu ru
 
-instance forall t l r.
-  ( Inhabited CShort l r, KnownCtx CShort t l r
-  ) => Known CShort t l r where
-  type KnownCtx CShort t l r = (K.KnownInteger t, l <= t, t <= r)
+instance forall l r t.
+  ( Inhabited CShort l r, KnownCtx CShort l r t
+  ) => Known CShort l r t where
+  type KnownCtx CShort l r t = (K.KnownInteger t, l <= t, t <= r)
   known' = UnsafeI . fromInteger . K.integerVal
 
 instance forall l r. (Inhabited CShort l r) => With CShort l r where

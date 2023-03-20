@@ -363,72 +363,72 @@ instance
 
 instance forall t l r.
   ( Inhabited P.Rational ('Just '( 'True, l)) ('Just '( 'True, r))
-  , KnownCtx P.Rational t ('Just '( 'True, l)) ('Just '( 'True, r))
-  ) => Known P.Rational t ('Just '( 'True, l)) ('Just '( 'True, r)) where
-  type KnownCtx P.Rational t ('Just '( 'True, l)) ('Just '( 'True, r)) =
+  , KnownCtx P.Rational ('Just '( 'True, l)) ('Just '( 'True, r)) t
+  ) => Known P.Rational ('Just '( 'True, l)) ('Just '( 'True, r)) t where
+  type KnownCtx P.Rational ('Just '( 'True, l)) ('Just '( 'True, r)) t =
     (KR.KnownRational t, l <= t, t <= r)
   known' = UnsafeI . KR.rationalVal
 
 instance forall t l r.
   ( Inhabited P.Rational ('Just '( 'True, l)) ('Just '( 'False, r))
-  , KnownCtx P.Rational t ('Just '( 'True, l)) ('Just '( 'False, r))
-  ) => Known P.Rational t ('Just '( 'True, l)) ('Just '( 'False, r)) where
-  type KnownCtx P.Rational t ('Just '( 'True, l)) ('Just '( 'False, r)) =
+  , KnownCtx P.Rational ('Just '( 'True, l)) ('Just '( 'False, r)) t
+  ) => Known P.Rational ('Just '( 'True, l)) ('Just '( 'False, r)) t where
+  type KnownCtx P.Rational ('Just '( 'True, l)) ('Just '( 'False, r)) t =
     (KR.KnownRational t, l <= t, t < r)
   known' = UnsafeI . KR.rationalVal
 
 instance forall t l.
   ( Inhabited P.Rational ('Just '( 'True, l)) 'Nothing
-  , KnownCtx P.Rational t ('Just '( 'True, l)) 'Nothing
-  ) => Known P.Rational t ('Just '( 'True, l)) 'Nothing where
-  type KnownCtx P.Rational t ('Just '( 'True, l)) 'Nothing =
+  , KnownCtx P.Rational ('Just '( 'True, l)) 'Nothing t
+  ) => Known P.Rational ('Just '( 'True, l)) 'Nothing t where
+  type KnownCtx P.Rational ('Just '( 'True, l)) 'Nothing t =
     (KR.KnownRational t, l <= t)
   known' = UnsafeI . KR.rationalVal
 
 instance forall t l r.
   ( Inhabited P.Rational ('Just '( 'False, l)) ('Just '( 'True, r))
-  , KnownCtx P.Rational t ('Just '( 'False, l)) ('Just '( 'True, r))
-  ) => Known P.Rational t ('Just '( 'False, l)) ('Just '( 'True, r)) where
-  type KnownCtx P.Rational t ('Just '( 'False, l)) ('Just '( 'True, r)) =
+  , KnownCtx P.Rational ('Just '( 'False, l)) ('Just '( 'True, r)) t
+  ) => Known P.Rational ('Just '( 'False, l)) ('Just '( 'True, r)) t where
+  type KnownCtx P.Rational ('Just '( 'False, l)) ('Just '( 'True, r)) t =
     (KR.KnownRational t, l < t, t <= r)
   known' = UnsafeI . KR.rationalVal
 
 instance forall t l.
   ( Inhabited P.Rational ('Just '( 'False, l)) 'Nothing
-  , KnownCtx P.Rational t ('Just '( 'False, l)) 'Nothing
-  ) => Known P.Rational t ('Just '( 'False, l)) 'Nothing where
-  type KnownCtx P.Rational t ('Just '( 'False, l)) 'Nothing =
+  , KnownCtx P.Rational ('Just '( 'False, l)) 'Nothing t
+  ) => Known P.Rational ('Just '( 'False, l)) 'Nothing t where
+  type KnownCtx P.Rational ('Just '( 'False, l)) 'Nothing t =
     (KR.KnownRational t, l < t)
   known' = UnsafeI . KR.rationalVal
 
 instance forall t r.
   ( Inhabited P.Rational 'Nothing ('Just '( 'True, r))
-  , KnownCtx P.Rational t 'Nothing ('Just '( 'True, r))
-  ) => Known P.Rational t 'Nothing ('Just '( 'True, r)) where
-  type KnownCtx P.Rational t 'Nothing ('Just '( 'True, r)) =
+  , KnownCtx P.Rational 'Nothing ('Just '( 'True, r)) t
+  ) => Known P.Rational 'Nothing ('Just '( 'True, r)) t where
+  type KnownCtx P.Rational 'Nothing ('Just '( 'True, r)) t =
     (KR.KnownRational t, t <= r)
   known' = UnsafeI . KR.rationalVal
 
 instance forall t r.
   ( Inhabited P.Rational 'Nothing ('Just '( 'False, r))
-  , KnownCtx P.Rational t 'Nothing ('Just '( 'False, r))
-  ) => Known P.Rational t 'Nothing ('Just '( 'False, r)) where
-  type KnownCtx P.Rational t 'Nothing ('Just '( 'False, r)) =
+  , KnownCtx P.Rational 'Nothing ('Just '( 'False, r)) t
+  ) => Known P.Rational 'Nothing ('Just '( 'False, r)) t where
+  type KnownCtx P.Rational 'Nothing ('Just '( 'False, r)) t =
     (KR.KnownRational t, t < r)
   known' = UnsafeI . KR.rationalVal
 
 instance forall t l r.
   ( Inhabited P.Rational ('Just '( 'False, l)) ('Just '( 'False, r))
-  , KnownCtx P.Rational t ('Just '( 'False, l)) ('Just '( 'False, r))
-  ) => Known P.Rational t ('Just '( 'False, l)) ('Just '( 'False, r)) where
-  type KnownCtx P.Rational t ('Just '( 'False, l)) ('Just '( 'False, r)) =
+  , KnownCtx P.Rational ('Just '( 'False, l)) ('Just '( 'False, r)) t
+  ) => Known P.Rational ('Just '( 'False, l)) ('Just '( 'False, r)) t where
+  type KnownCtx P.Rational ('Just '( 'False, l)) ('Just '( 'False, r)) t =
     (KR.KnownRational t, l < t, t < r)
   known' = UnsafeI . KR.rationalVal
 
 instance forall t.
-  ( KnownCtx P.Rational t 'Nothing 'Nothing
-  ) => Known P.Rational t 'Nothing 'Nothing where
-  type KnownCtx P.Rational t 'Nothing 'Nothing = KR.KnownRational t
+  ( KnownCtx P.Rational 'Nothing 'Nothing t
+  ) => Known P.Rational 'Nothing 'Nothing t where
+  type KnownCtx P.Rational 'Nothing 'Nothing t = KR.KnownRational t
   known' = UnsafeI . KR.rationalVal
 
 --------------------------------------------------------------------------------
