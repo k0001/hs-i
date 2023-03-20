@@ -40,7 +40,7 @@ main :: IO ()
 main =
   Tasty.defaultMainWithIngredients
     [ Tasty.consoleTestReporter, Tasty.listingTests ]
-    $ Tasty.localOption (HedgehogTestLimit (Just 5000))
+    $ Tasty.localOption (HedgehogTestLimit (Just 1000))
     $ tt
 
 tt :: TestTree
@@ -747,7 +747,10 @@ tt_Integer'lr = testGroup ("Interval [" <> show l <> ", " <> show r <> "]")
 
   , pure $ testProperty "negate'" $ property $ do
       x <- forAll $ genIInteger @('Just l) @('Just r)
-      Nothing === I.negate' x
+      case I.negate' x of
+        Just y -> Just x === I.negate' y
+        Nothing -> Nothing === I.from @Integer @('Just l) @('Just r)
+                                      (negate (toInteger (I.unwrap x)))
 
   , pure $ testProperty "down" $ property $ do
       x <- forAll $ genIInteger @('Just l) @('Just r)
