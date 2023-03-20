@@ -404,74 +404,82 @@ instance forall t.
 instance forall l r.
   ( Inhabited P.Rational ('Just '( 'True, l)) ('Just '( 'True, r))
   ) => With P.Rational ('Just '( 'True, l)) ('Just '( 'True, r)) where
-  with x g | KR.SomeRational (pt :: Proxy t) <- KR.someRationalVal (unwrap x) =
-    fromMaybe (error "I.with(Rational): impossible") $ do
-      Dict <- le @l @t
-      Dict <- le @t @r
-      pure (g pt)
+  with x g = case KR.someRationalVal (unwrap x) of
+    KR.SomeRational (pt :: Proxy t) ->
+      fromMaybe (error "I.with(Rational): impossible") $ do
+        Dict <- le @l @t
+        Dict <- le @t @r
+        pure (g pt)
 
 instance forall l r.
   ( Inhabited P.Rational ('Just '( 'True, l)) ('Just '( 'False, r))
   ) => With P.Rational ('Just '( 'True, l)) ('Just '( 'False, r)) where
-  with x g | KR.SomeRational (pt :: Proxy t) <- KR.someRationalVal (unwrap x) =
-    fromMaybe (error "I.with(Rational): impossible") $ do
-      Dict <- le @l @t
-      Dict <- lt @t @r
-      pure (g pt)
+  with x g = case KR.someRationalVal (unwrap x) of
+    KR.SomeRational (pt :: Proxy t) ->
+      fromMaybe (error "I.with(Rational): impossible") $ do
+        Dict <- le @l @t
+        Dict <- lt @t @r
+        pure (g pt)
 
 instance forall l.
   ( Inhabited P.Rational ('Just '( 'True, l)) 'Nothing
   ) => With P.Rational ('Just '( 'True, l)) 'Nothing where
-  with x g | KR.SomeRational (pt :: Proxy t) <- KR.someRationalVal (unwrap x) =
-    fromMaybe (error "I.with(Rational): impossible") $ do
-      Dict <- le @l @t
-      pure (g pt)
+  with x g = case KR.someRationalVal (unwrap x) of
+    KR.SomeRational (pt :: Proxy t) ->
+      fromMaybe (error "I.with(Rational): impossible") $ do
+        Dict <- le @l @t
+        pure (g pt)
 
 instance forall l.
   ( Inhabited P.Rational ('Just '( 'False, l)) 'Nothing
   ) => With P.Rational ('Just '( 'False, l)) 'Nothing where
-  with x g | KR.SomeRational (pt :: Proxy t) <- KR.someRationalVal (unwrap x) =
-    fromMaybe (error "I.with(Rational): impossible") $ do
-      Dict <- lt @l @t
-      pure (g pt)
+  with x g = case KR.someRationalVal (unwrap x) of
+    KR.SomeRational (pt :: Proxy t) ->
+      fromMaybe (error "I.with(Rational): impossible") $ do
+        Dict <- lt @l @t
+        pure (g pt)
 
 instance forall l r.
   ( Inhabited P.Rational ('Just '( 'False, l)) ('Just '( 'True, r))
   ) => With P.Rational ('Just '( 'False, l)) ('Just '( 'True, r)) where
-  with x g | KR.SomeRational (pt :: Proxy t) <- KR.someRationalVal (unwrap x) =
-    fromMaybe (error "I.with(Rational): impossible") $ do
-      Dict <- lt @l @t
-      Dict <- le @t @r
-      pure (g pt)
+  with x g = case KR.someRationalVal (unwrap x) of
+    KR.SomeRational (pt :: Proxy t) ->
+      fromMaybe (error "I.with(Rational): impossible") $ do
+        Dict <- lt @l @t
+        Dict <- le @t @r
+        pure (g pt)
 
 instance forall r.
   ( Inhabited P.Rational 'Nothing ('Just '( 'True, r))
   ) => With P.Rational 'Nothing ('Just '( 'True, r)) where
-  with x g | KR.SomeRational (pt :: Proxy t) <- KR.someRationalVal (unwrap x) =
-    fromMaybe (error "I.with(Rational): impossible") $ do
-      Dict <- le @t @r
-      pure (g pt)
+  with x g = case KR.someRationalVal (unwrap x) of
+    KR.SomeRational (pt :: Proxy t) ->
+      fromMaybe (error "I.with(Rational): impossible") $ do
+        Dict <- le @t @r
+        pure (g pt)
 
 instance forall l r.
   ( Inhabited P.Rational ('Just '( 'False, l)) ('Just '( 'False, r))
   ) => With P.Rational ('Just '( 'False, l)) ('Just '( 'False, r)) where
-  with x g | KR.SomeRational (pt :: Proxy t) <- KR.someRationalVal (unwrap x) =
-    fromMaybe (error "I.with(Rational): impossible") $ do
-      Dict <- lt @l @t
-      Dict <- lt @t @r
-      pure (g pt)
+  with x g = case KR.someRationalVal (unwrap x) of
+    KR.SomeRational (pt :: Proxy t) ->
+      fromMaybe (error "I.with(Rational): impossible") $ do
+        Dict <- lt @l @t
+        Dict <- lt @t @r
+        pure (g pt)
 
 instance forall r.
   ( Inhabited P.Rational 'Nothing ('Just '( 'False, r))
   ) => With P.Rational 'Nothing ('Just '( 'False, r)) where
-  with x g | KR.SomeRational (pt :: Proxy t) <- KR.someRationalVal (unwrap x) =
-    fromMaybe (error "I.with(Rational): impossible") $ do
-      Dict <- lt @t @r
-      pure (g pt)
+  with x g = case KR.someRationalVal (unwrap x) of
+    KR.SomeRational (pt :: Proxy t) ->
+      fromMaybe (error "I.with(Rational): impossible") $ do
+        Dict <- lt @t @r
+        pure (g pt)
 
 instance With P.Rational 'Nothing 'Nothing where
-  with x g | KR.SomeRational (pt :: Proxy t) <- KR.someRationalVal (unwrap x) =
-    g pt
+  with x g = case KR.someRationalVal (unwrap x) of
+    KR.SomeRational (pt :: Proxy t) -> g pt
 
 --------------------------------------------------------------------------------
 
