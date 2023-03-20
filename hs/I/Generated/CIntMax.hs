@@ -8,7 +8,6 @@
 module I.Generated.CIntMax () where
 
 import Control.Monad
-import Data.Bits
 import Data.Constraint
 import Data.Int
 import Data.Maybe
@@ -51,35 +50,36 @@ instance
   ( Interval CIntMax l r, InhabitedCtx CIntMax l r
   ) => Inhabited CIntMax l r where
   inhabitant = min
-  from x | K.SomeInteger (_ :: Proxy t) <- K.someIntegerVal (toInteger x) = do
-    Dict <- leInteger @l @t
-    Dict <- leInteger @t @r
-    pure (UnsafeI x)
+  from = \x -> UnsafeI x <$ guard (l <= x && x <= r)
+    where l = fromInteger (K.integerVal (Proxy @l)) :: CIntMax
+          r = fromInteger (K.integerVal (Proxy @r)) :: CIntMax
 
-  negate' x = do
-    guard (unwrap x /= minBound)
-    from (P.negate (unwrap x))
+  negate' (unwrap -> x) = do
+    guard (x /= minBound)
+    from (P.negate x)
 
-  a `plus'` b =
-    let a' = unwrap a
-        b' = unwrap b
-    in case a' + b' of
-         x | a' < 0 && b' < 0 && x >= 0 -> Nothing
-           | a' > 0 && b' > 0 && x <  0 -> Nothing
-           | otherwise -> from x
+  (unwrap -> a) `plus'` (unwrap -> b)
+    | b > 0 && a > maxBound - b = Nothing
+    | b < 0 && a < minBound - b = Nothing
+    | otherwise                 = from (a + b)
 
-  a `mult'` b = do
-    x <- toIntegralSized (toInteger (unwrap a) * toInteger (unwrap b))
-    from x
+  (unwrap -> a) `mult'` (unwrap -> b) = do
+    guard $ case a <= 0 of
+      True  | b <= 0    -> a == 0 || b >= (maxBound `quot` a)
+            | otherwise -> a >= (minBound `quot` b)
+      False | b <= 0    -> b >= (minBound `quot` a)
+            | otherwise -> a <= (maxBound `quot` b)
+    from (a * b)
 
-  a `minus'` b = do
-    x <- toIntegralSized (toInteger (unwrap a) - toInteger (unwrap b))
-    from x
+  (unwrap -> a) `minus'` (unwrap -> b)
+    | b > 0 && a < minBound + b = Nothing
+    | b < 0 && a > maxBound + b = Nothing
+    | otherwise                 = from (a - b)
 
-  a `div'` b = do
-    guard ((unwrap b /= 0) &&
-           (unwrap b /= -1 || unwrap a /= minBound))
-    (q, 0) <- pure $ divMod (unwrap a) (unwrap b)
+  (unwrap -> a) `div'` (unwrap -> b) = do
+    guard (b /= 0 && (b /= -1 || a /= minBound))
+    let (q, m) = divMod a b
+    guard (m == 0)
     from q
 
 instance (Inhabited CIntMax l r) => Clamp CIntMax l r

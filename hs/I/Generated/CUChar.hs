@@ -8,7 +8,6 @@
 module I.Generated.CUChar () where
 
 import Control.Monad
-import Data.Bits
 import Data.Constraint
 import Data.Maybe
 import Data.Proxy
@@ -51,28 +50,26 @@ instance
   ( Interval CUChar l r, InhabitedCtx CUChar l r
   ) => Inhabited CUChar l r where
   inhabitant = min
-  from x = do
-    L.SomeNat (_ :: Proxy x) <- L.someNatVal (toInteger x)
-    Dict <- leNatural @l @x
-    Dict <- leNatural @x @r
-    pure (UnsafeI x)
+  from = \x -> UnsafeI x <$ guard (l <= x && x <= r)
+    where l = fromInteger (L.natVal (Proxy @l)) :: CUChar
+          r = fromInteger (L.natVal (Proxy @r)) :: CUChar
 
-  a `plus'` b = do
-    let x = unwrap a + unwrap b
-    guard (x >= unwrap a)
-    from x
+  (unwrap -> a) `plus'` (unwrap -> b) = do
+    guard (b <= maxBound - a)
+    from (a + b)
 
-  a `mult'` b = do
-    x <- toIntegralSized (toInteger (unwrap a) * toInteger (unwrap b))
-    from x
+  (unwrap -> a) `mult'` (unwrap -> b) = do
+    guard (b == 0 || a <= maxBound `quot` b)
+    from (a * b)
 
-  a `minus'` b = do
-    guard (a >= b)
-    from (unwrap a - unwrap b)
+  (unwrap -> a) `minus'` (unwrap -> b) = do
+    guard (b <= a)
+    from (a - b)
 
-  a `div'` b = do
-    guard (unwrap b /= 0)
-    (q, 0) <- pure $ divMod (unwrap a) (unwrap b)
+  (unwrap -> a) `div'` (unwrap -> b) = do
+    guard (b /= 0)
+    let (q, m) = divMod a b
+    guard (m == 0)
     from q
 
 instance (Inhabited CUChar l r) => Clamp CUChar l r
