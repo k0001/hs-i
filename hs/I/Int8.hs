@@ -71,16 +71,13 @@ instance
     x <- toIntegralSized (toInteger (unwrap a) * toInteger (unwrap b))
     from x
 
-  a `minus'` b =
-    let a' = unwrap a
-        b' = P.negate (unwrap b)
-    in case a' + b' of
-         x | a' < 0 && b' < 0 && x >= 0 -> Nothing
-           | a' > 0 && b' > 0 && x <  0 -> Nothing
-           | otherwise -> from x
+  a `minus'` b = do
+    x <- toIntegralSized (toInteger (unwrap a) - toInteger (unwrap b))
+    from x
 
   a `div'` b = do
-    guard (unwrap b /= 0)
+    guard ((unwrap b /= 0) &&
+           (unwrap b /= -1 || unwrap a /= minBound))
     (q, 0) <- pure $ divMod (unwrap a) (unwrap b)
     from q
 

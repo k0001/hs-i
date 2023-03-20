@@ -4,6 +4,7 @@
 {-# OPTIONS_GHC -Wno-unused-imports -Wno-unused-top-binds #-}
 module Main (main) where
 
+import Control.Exception qualified as Ex
 import Control.Monad
 import Data.Constraint
 import Data.Int
@@ -14,9 +15,10 @@ import Data.Word
 import Data.Type.Ord
 import GHC.Real (Ratio((:%)))
 import GHC.TypeLits qualified as L
-import Hedgehog (MonadGen, forAll, property, assert, diff, (===), (/==))
+import Hedgehog (MonadGen, annotateShow, forAll, property, assert, diff, (===), (/==))
 import qualified Hedgehog.Gen as Gen
 import qualified Hedgehog.Range as Range
+import KindInteger (N, P)
 import KindInteger qualified as KI
 import KindRational qualified as KR
 import Numeric.Natural
@@ -42,6 +44,7 @@ main =
 tt :: TestTree
 tt = testGroup "I"
   [ tt_Word8
+  , tt_Int8
   ]
 
 --------------------------------------------------------------------------------
@@ -126,16 +129,15 @@ tt_Word8' = testGroup ("Interval [" <> show l <> ", " <> show r <> "]")
         Nothing -> assert (x < l'' || x > r'')
         Just y -> toInteger (I.unwrap y) === x
 
-  , case L.cmpNat (Proxy @0) (Proxy @r) of
-      EQI -> mzero
-      _ -> pure $ testProperty "div'" $ property $ do
-        a <- forAll $ genIWord8 @l @r
-        b <- forAll $ Gen.filter (\x -> I.unwrap x /= 0) (genIWord8 @l @r)
-        let (q, m) = toInteger (I.unwrap a) `divMod` toInteger (I.unwrap b)
-        case I.div' a b of
-          Nothing -> assert (q < l'' || m > r'' || m /= 0)
-          Just y -> do q === toInteger (I.unwrap y)
-                       m === 0
+  , if (l' == 0 && r' == 0) then mzero else
+    pure $ testProperty "div'" $ property $ do
+      a <- forAll $ genIWord8 @l @r
+      b <- forAll $ Gen.filter (\x -> I.unwrap x /= 0) (genIWord8 @l @r)
+      let (q, m) = toInteger (I.unwrap a) `divMod` toInteger (I.unwrap b)
+      case I.div' a b of
+        Nothing -> assert (q < l'' || q > r'' || m /= 0)
+        Just y -> do q === toInteger (I.unwrap y)
+                     m === 0
 
   , pure $ testProperty "clamp'" $ property $ do
       x <- forAll $ genWord8
@@ -182,6 +184,155 @@ tt_Word8' = testGroup ("Interval [" <> show l <> ", " <> show r <> "]")
     l'' = toInteger l' :: Integer
     r   = I.max        :: I Word8 l r
     r'  = I.unwrap r   :: Word8
+    r'' = toInteger r' :: Integer
+
+--------------------------------------------------------------------------------
+
+-- checking some constants used below
+_tt_Int8 :: Dict (I.MinL Int8 ~ N 128, I.MaxR Int8 ~ P 127)
+_tt_Int8 =  Dict
+
+tt_Int8 :: TestTree
+tt_Int8 = testGroup "Int8"
+  [ testProperty "wrap" $ property $ do
+      x <- forAll genInt8
+      x === I.unwrap (I.wrap x)
+
+  , tt_Int8' @(N 128) @(P 127) -- full range
+
+  , tt_Int8' @(N 1)   @(N 1)
+  , tt_Int8' @(N 1)   @(P 0)
+  , tt_Int8' @(P 0)   @(P 0)
+  , tt_Int8' @(P 0)   @(P 1)
+  , tt_Int8' @(P 1)   @(P 1)
+
+  , tt_Int8' @(N 128) @(N 128) -- left end
+  , tt_Int8' @(P 127) @(P 127) -- right end
+
+  , tt_Int8' @(N 128) @(N 100) -- partial on the left, some negatives
+  , tt_Int8' @(N 128) @(N   1) -- partial on the left, all negatives
+  , tt_Int8' @(N 128) @(N   0) -- partial on the left, all negatives and zero
+  , tt_Int8' @(N 128) @(P  50) -- partial on the left, negative and positive
+
+  , tt_Int8' @(P 100) @(P 127) -- partial on the right, some positives
+  , tt_Int8' @(P   1) @(P 127) -- partial on the right, all positives
+  , tt_Int8' @(P   0) @(P 127) -- partial on the right, all positives and zero
+  , tt_Int8' @(N  50) @(P 127) -- partial on the right, negative and positive
+
+  , tt_Int8' @(N 100) @(N   1) -- partial on the center, negatives
+  , tt_Int8' @(N 100) @(N   0) -- partial on the center, negatives and zero
+  , tt_Int8' @(P   1) @(P 100) -- partial on the center, positives
+  , tt_Int8' @(N   0) @(P 100) -- partial on the center, positives and zero
+  , tt_Int8' @(N 100) @(P 100) -- partial on the center, negative and positive
+
+  ]
+
+tt_Int8'
+  :: forall (l :: I.L Int8) (r :: I.R Int8)
+  .  I.Inhabited Int8 l r
+  => TestTree
+tt_Int8' = testGroup ("Interval [" <> show l <> ", " <> show r <> "]")
+  $ concat
+  [ pure $ testProperty "from" $ property $ do
+      x <- forAll genInt8
+      case I.from @Int8 @l @r x of
+        Nothing -> assert (x < l' || x > r')
+        Just y -> do assert (x >= l' && x <= r')
+                     I.unwrap y === x
+
+  , pure $ testProperty "shove" $ property $ do
+      x <- forAll genInt8
+      let y = I.shove @Int8 @l @r x
+      I.from (I.unwrap y) === Just y
+      if x < l' || x > r'
+         then I.from @Int8 @l @r x === Nothing
+         else I.from @Int8 @l @r x /== Nothing
+
+  , pure $ testProperty "plus'" $ property $ do
+      a <- forAll $ genIInt8 @l @r
+      b <- forAll $ genIInt8 @l @r
+      let x = toInteger (I.unwrap a) + toInteger (I.unwrap b)
+      case I.plus' a b of
+        Nothing -> assert (x < l'' || x > r'')
+        Just y -> toInteger (I.unwrap y) === x
+
+  , pure $ testProperty "mult'" $ property $ do
+      a <- forAll $ genIInt8 @l @r
+      b <- forAll $ genIInt8 @l @r
+      let x = toInteger (I.unwrap a) * toInteger (I.unwrap b)
+      case I.mult' a b of
+        Nothing -> assert (x < l'' || x > r'')
+        Just y -> toInteger (I.unwrap y) === x
+
+  , pure $ testProperty "minus'" $ property $ do
+      a <- forAll $ genIInt8 @l @r
+      b <- forAll $ genIInt8 @l @r
+      let x = toInteger (I.unwrap a) - toInteger (I.unwrap b)
+      case I.minus' a b of
+        Nothing -> assert (x < l'' || x > r'')
+        Just y -> toInteger (I.unwrap y) === x
+
+  , if (l' == 0 && r' == 0) then mzero else
+    pure $ testProperty "div'" $ property $ do
+      annotateShow ('l', l)
+      annotateShow ('r', r)
+      a <- forAll $ genIInt8 @l @r
+      annotateShow ('a', a)
+      b <- forAll $ Gen.filter (\x -> I.unwrap x /= 0) (genIInt8 @l @r)
+      annotateShow ('b', b)
+      let (q, m) = toInteger (I.unwrap a) `divMod` toInteger (I.unwrap b)
+      annotateShow ('q', q)
+      annotateShow ('m', m)
+      case I.div' a b of
+        Nothing -> assert (q < l'' || q > r'' || m /= 0)
+        Just y -> do q === toInteger (I.unwrap y)
+                     m === 0
+
+  , pure $ testProperty "clamp'" $ property $ do
+      x <- forAll $ genInt8
+      case I.clamp @Int8 @l @r x of
+        y | x < l' -> I.unwrap y === l'
+          | x > r' -> I.unwrap y === r'
+          | otherwise -> Just y === I.from x
+
+  , pure $ testProperty "with" $ property $ do
+      x <- forAll $ genIInt8 @l @r
+      x === I.with x I.known'
+
+  , case KI.cmpInteger (Proxy @l) (Proxy @r) of
+      LTI ->
+        [ testProperty "pred" $ property $ do
+            x <- forAll $ genIInt8 @l @r
+            case I.pred' x of
+              Nothing -> x === l
+              Just y -> do x /== l
+                           I.unwrap y === I.unwrap x - 1
+        , testProperty "succ" $ property $ do
+            x <- forAll $ genIInt8 @l @r
+            case I.succ' x of
+              Nothing -> x === r
+              Just y -> do x /== r
+                           I.unwrap y === I.unwrap x + 1
+        ]
+      _ -> mzero
+
+  , case KI.cmpInteger (Proxy @l) (Proxy @(P 0)) of
+      EQI -> pure $ testCase "zero" $
+               0 @=? I.unwrap (I.zero @Int8 @l @r)
+      _ -> mzero
+
+  , case (leInteger @l @(P 1), leInteger @(P 1) @r) of
+      (Just Dict, Just Dict) -> pure $ testCase "one" $ do
+        1 @=? I.unwrap (I.one @Int8 @l @r)
+      _ -> mzero
+
+  ]
+  where
+    l   = I.min        :: I Int8 l r
+    l'  = I.unwrap l   :: Int8
+    l'' = toInteger l' :: Integer
+    r   = I.max        :: I Int8 l r
+    r'  = I.unwrap r   :: Int8
     r'' = toInteger r' :: Integer
 
 --------------------------------------------------------------------------------
