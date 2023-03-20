@@ -94,7 +94,7 @@ instance forall t l r.
   ( Inhabited Int32 l r, KnownCtx Int32 t l r
   ) => Known Int32 t l r where
   type KnownCtx Int32 t l r = (K.KnownInteger t, l <= t, t <= r)
-  known = UnsafeI (fromInteger (K.integerVal (Proxy @t)))
+  known' = UnsafeI . fromInteger . K.integerVal
 
 instance forall l r. (Inhabited Int32 l r) => With Int32 l r where
   with x g

@@ -84,7 +84,7 @@ instance forall t l r.
   ( Inhabited Word64 l r, KnownCtx Word64 t l r
   ) => Known Word64 t l r where
   type KnownCtx Word64 t l r = (L.KnownNat t, l <= t, t <= r)
-  known = UnsafeI (fromInteger (L.natVal (Proxy @t)))
+  known' = UnsafeI . fromInteger . L.natVal
 
 instance forall l r. (Inhabited Word64 l r) => With Word64 l r where
   with x g = fromMaybe (error "I.with: impossible") $ do

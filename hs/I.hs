@@ -42,6 +42,7 @@ module I
  , Div(..)
    -- * Known
  , Known(..)
+ , known
  , With(..)
  , min
  , max

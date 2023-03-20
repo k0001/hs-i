@@ -94,7 +94,7 @@ instance forall t l r.
   ( Inhabited CLong l r, KnownCtx CLong t l r
   ) => Known CLong t l r where
   type KnownCtx CLong t l r = (K.KnownInteger t, l <= t, t <= r)
-  known = UnsafeI (fromInteger (K.integerVal (Proxy @t)))
+  known' = UnsafeI . fromInteger . K.integerVal
 
 instance forall l r. (Inhabited CLong l r) => With CLong l r where
   with x g

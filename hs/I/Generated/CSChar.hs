@@ -94,7 +94,7 @@ instance forall t l r.
   ( Inhabited CSChar l r, KnownCtx CSChar t l r
   ) => Known CSChar t l r where
   type KnownCtx CSChar t l r = (K.KnownInteger t, l <= t, t <= r)
-  known = UnsafeI (fromInteger (K.integerVal (Proxy @t)))
+  known' = UnsafeI . fromInteger . K.integerVal
 
 instance forall l r. (Inhabited CSChar l r) => With CSChar l r where
   with x g

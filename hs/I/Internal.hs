@@ -298,53 +298,32 @@ class
   type KnownCtx x t l r = ()
   -- | Obtain a term-level representation of @t@ as @'I' x l r@.
   --
-  -- The type-parameters to 'known' are expected to be applied
-  -- using @TypeApplications@ in @__x t l r__@ order:
-  --
-  -- @
-  -- > :type 'known'
-  -- /'known' :: forall (__x__ :: 'Type') (__t__ :: 'T' x) (__l__ :: 'L' x) (__r__ :: 'R' x). 'Known' x t l r => 'I' x l r/
-  --
-  -- > :type 'known' \@'Word8'
-  -- /'known' \@'Word8' :: 'Known' 'Word8' t l r => 'I' 'Word8' l r/
-  --
-  -- > :type 'known' \@'Word8' \@55
-  -- /'known' \@'Word8' \@55 :: 'Known' 'Word8' 55 l r => 'I' 'Word8' l r/
-  --
-  -- > :type 'known' \@'Word8' \@55 \@33
-  -- /'known' \@'Word8' \@55 \@33 :: 'Known' 'Word8' 55 33 r => 'I' 'Word8' 33 r/
-  --
-  -- > :type 'known' \@'Word8' \@55 \@33 \@77
-  -- /'known' \@'Word8' \@55 \@33 \@77 :: 'I' 'Word8' 33 77/
-  --
-  -- > 'known' \@'Word8' \@55 \@33 \@77
-  -- /55/
-  -- @
-  --
-  -- You may skip applying of the type-parameters using @__\@___@ if they can
-  -- be inferred by other means. This is particularly handy if you can skip
-  -- @x@. For example, in the following examples we are letting the
-  -- type-checker know by other means that @x@ is expected to be 'Word8', so
-  -- we can use the @\@_@ placeholder as first @TypeApplications@ parameter
-  -- to 'known':
-  --
-  -- @
-  -- > :type 'known' __\@___
-  -- /'known' :: forall __{__x :: 'Type'__}__ (__t__ :: 'T' x) (__l__ :: 'L' x) (__r__ :: 'R' x). 'Known' x t l r => 'I' x l r/
-  --
-  -- > :type 'known' \@_ \@55 :: 'Known' 'Word8' 55 l r => 'I' 'Word8' l r
-  -- /'known' \@_ \@55 :: 'Known' 'Word8' 55 l r => 'I' 'Word8' l r/
-  --
-  -- > :type 'known' \@_ \@55 \@33 :: 'Known' 'Word8' 55 33 r => 'I' 'Word8' 33 r
-  -- /'known' \@_ \@55 \@33 :: 'Known' 'Word8' 55 33 r => 'I' 'Word8' 33 r/
-  --
-  -- > :type 'known' \@_ \@55 \@33 \@77 :: 'I' 'Word8' 33 77
-  -- /'known' \@_ \@55 \@33 \@77 :: 'I' 'Word8' 33 77 :: 'I' 'Word8' 33 77/
-  --
-  -- > 'known' \@_ \@55 \@33 \@77 :: 'I' 'Word8' 33 77
-  -- /55/
-  -- @
-  known :: I x l r
+  -- Also consider using 'known', an alternative version of this function
+  -- designed to be used with @-XTypeApplications@.
+  known' :: Proxy t -> I x l r
+
+-- | Alternative version of 'known'', designed to be used with
+-- @-XTypeApplications@. It works only when @x@ can be inferred by other means.
+--
+-- @
+-- > :type 'known'
+-- /'known' :: forall __{__x :: 'Type'__}__ (__t__ :: 'T' x) (__l__ :: 'L' x) (__r__ :: 'R' x). 'Known' x t l r => 'I' x l r/
+--
+-- > :type 'known' \@55 :: 'Known' 'Word8' 55 l r => 'I' 'Word8' l r
+-- /'known' \@55 :: 'Known' 'Word8' 55 l r => 'I' 'Word8' l r/
+--
+-- > :type 'known' \@55 \@33 :: 'Known' 'Word8' 55 33 r => 'I' 'Word8' 33 r
+-- /'known' \@55 \@33 :: 'Known' 'Word8' 55 33 r => 'I' 'Word8' 33 r/
+--
+-- > :type 'known' \@55 \@33 \@77 :: 'I' 'Word8' 33 77
+-- /'known' \@55 \@33 \@77 :: 'I' 'Word8' 33 77 :: 'I' 'Word8' 33 77/
+--
+-- > 'known' \@55 \@33 \@77 :: 'I' 'Word8' 33 77
+-- /55/
+-- @
+known :: forall {x} t l r. Known x t l r => I x l r
+known = known' (Proxy @t)
+{-# INLINE known #-}
 
 -- | Proof that @'I' x l r@ contains a value of type @x@ whose
 -- type-level representation @t :: 'T' x@ satisfies a @'Known' x t l r@.
@@ -359,7 +338,7 @@ class (Inhabited x l r) => With (x :: Type) (l :: L x) (r :: R x) where
   -- [Identity law]
   --
   --     @
-  --     x  ==  'with' x (\\(_ :: 'Proxy' t) -> 'known' \@_ \@t)
+  --     x  ==  'with' x 'known''
   --     @
   with :: I x l r -> (forall (t :: T x). Known x t l r => Proxy t -> b) -> b
 
@@ -403,11 +382,11 @@ unwrap = coerce
 
 -- | Minimum value in the interval, if @'MinI' x@ is defined.
 min :: forall x l r. Known x (MinI x l r) l r => I x l r
-min = known @_ @(MinI x l r)
+min = known @(MinI x l r)
 
 -- | Maximum value in the interval, if @'MaxI' x@ is defined.
 max :: forall x l r. Known x (MaxI x l r) l r => I x l r
-max = known @_ @(MaxI x l r)
+max = known @(MaxI x l r)
 
 instance
   ( Known x (MinI x l r) l r

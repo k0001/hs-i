@@ -84,7 +84,7 @@ instance forall t l r.
   ( Inhabited CUIntMax l r, KnownCtx CUIntMax t l r
   ) => Known CUIntMax t l r where
   type KnownCtx CUIntMax t l r = (L.KnownNat t, l <= t, t <= r)
-  known = UnsafeI (fromInteger (L.natVal (Proxy @t)))
+  known' = UnsafeI . fromInteger . L.natVal
 
 instance forall l r. (Inhabited CUIntMax l r) => With CUIntMax l r where
   with x g = fromMaybe (error "I.with: impossible") $ do

@@ -94,7 +94,7 @@ instance forall t l r.
   ( Inhabited CIntMax l r, KnownCtx CIntMax t l r
   ) => Known CIntMax t l r where
   type KnownCtx CIntMax t l r = (K.KnownInteger t, l <= t, t <= r)
-  known = UnsafeI (fromInteger (K.integerVal (Proxy @t)))
+  known' = UnsafeI . fromInteger . K.integerVal
 
 instance forall l r. (Inhabited CIntMax l r) => With CIntMax l r where
   with x g

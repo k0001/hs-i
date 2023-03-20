@@ -94,7 +94,7 @@ instance forall t l r.
   ( Inhabited CPtrdiff l r, KnownCtx CPtrdiff t l r
   ) => Known CPtrdiff t l r where
   type KnownCtx CPtrdiff t l r = (K.KnownInteger t, l <= t, t <= r)
-  known = UnsafeI (fromInteger (K.integerVal (Proxy @t)))
+  known' = UnsafeI . fromInteger . K.integerVal
 
 instance forall l r. (Inhabited CPtrdiff l r) => With CPtrdiff l r where
   with x g

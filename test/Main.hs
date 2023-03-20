@@ -126,8 +126,7 @@ tt_Word8' = testGroup ("Interval [" <> show l <> ", " <> show r <> "]")
 
   , pure $ testProperty "with" $ property $ do
       x <- forAll $ genI @Word8 @l @r
-      I.with x $ \(_ :: Proxy t) ->
-        x === I.known @Word8 @t @l @r
+      x === I.with x I.known'
 
   ]
   where
