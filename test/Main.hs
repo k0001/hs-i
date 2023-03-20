@@ -6,6 +6,7 @@ module Main (main) where
 
 import Control.Exception qualified as Ex
 import Control.Monad
+import Data.Bits
 import Data.Constraint
 import Data.Int
 import Data.Kind
@@ -177,6 +178,10 @@ tt_Word8' = testGroup ("Interval [" <> show l <> ", " <> show r <> "]")
         1 @=? I.unwrap (I.one @Word8 @l @r)
       _ -> mzero
 
+  , pure $ testProperty "negate" $ property $ do
+      x <- forAll $ genIWord8 @l @r
+      Nothing === I.negate' x
+
   ]
   where
     l   = I.min        :: I Word8 l r
@@ -325,6 +330,11 @@ tt_Int8' = testGroup ("Interval [" <> show l <> ", " <> show r <> "]")
       (Just Dict, Just Dict) -> pure $ testCase "one" $ do
         1 @=? I.unwrap (I.one @Int8 @l @r)
       _ -> mzero
+
+  , pure $ testProperty "negate" $ property $ do
+      x <- forAll $ genIInt8 @l @r
+      I.negate' x ===
+        (I.from =<< toIntegralSized (negate (toInteger (I.unwrap x))))
 
   ]
   where

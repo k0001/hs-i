@@ -93,9 +93,9 @@ instance forall l r t.
   known' = UnsafeI . fromInteger . K.integerVal
 
 instance forall l r. (Inhabited Int8 l r) => With Int8 l r where
-  with x g
-    | K.SomeInteger (pt :: Proxy t) <- K.someIntegerVal (toInteger (unwrap x))
-    = fromMaybe (error "I.with: impossible") $ do
+  with x g = case K.someIntegerVal (toInteger (unwrap x)) of
+    K.SomeInteger (pt :: Proxy t) ->
+      fromMaybe (error "I.with: impossible") $ do
         Dict <- leInteger @l @t
         Dict <- leInteger @t @r
         pure (g pt)
