@@ -90,9 +90,7 @@ instance forall l r. (Inhabited CUChar l r) => With CUChar l r where
     Dict <- leNatural @t @r
     pure (g pt)
 
-instance
-  ( Inhabited CUChar l r, l /= r
-  ) => Discrete CUChar l r where
+instance (Inhabited CUChar l r, l /= r) => Discrete CUChar l r where
   pred' i = UnsafeI (unwrap i - 1) <$ guard (min < i)
   succ' i = UnsafeI (unwrap i + 1) <$ guard (i < max)
 

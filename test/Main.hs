@@ -16,7 +16,8 @@ import Data.Word
 import Data.Type.Ord
 import GHC.Real (Ratio((:%)))
 import GHC.TypeLits qualified as L
-import Hedgehog (MonadGen, annotateShow, forAll, property, assert, diff, (===), (/==))
+import Hedgehog (MonadGen, failure, annotateShow, forAll, property, assert,
+  diff, (===), (/==))
 import qualified Hedgehog.Gen as Gen
 import qualified Hedgehog.Range as Range
 import KindInteger (N, P)
@@ -182,6 +183,18 @@ tt_Word8' = testGroup ("Interval [" <> show l <> ", " <> show r <> "]")
       x <- forAll $ genIWord8 @l @r
       Nothing === I.negate' x
 
+  , pure $ testProperty "down" $ property $ do
+      x <- forAll $ genIWord8 @l @r
+      Just x === I.down x
+      case I.down x of
+        Nothing -> failure
+        Just y -> I.unwrap x
+              === I.unwrap (y :: I Word8 (I.MinL Word8) (I.MaxR Word8))
+
+  , pure $ testProperty "up" $ property $ do
+      x <- forAll $ genIWord8 @l @r
+      x === I.up x
+      I.unwrap x === I.unwrap (I.up x :: I Word8 (I.MinL Word8) (I.MaxR Word8))
   ]
   where
     l   = I.min        :: I Word8 l r
@@ -336,6 +349,18 @@ tt_Int8' = testGroup ("Interval [" <> show l <> ", " <> show r <> "]")
       I.negate' x ===
         (I.from =<< toIntegralSized (negate (toInteger (I.unwrap x))))
 
+  , pure $ testProperty "down" $ property $ do
+      x <- forAll $ genIInt8 @l @r
+      Just x === I.down x
+      case I.down x of
+        Nothing -> failure
+        Just y -> I.unwrap x
+              === I.unwrap (y :: I Int8 (I.MinL Int8) (I.MaxR Int8))
+
+  , pure $ testProperty "up" $ property $ do
+      x <- forAll $ genIInt8 @l @r
+      x === I.up x
+      I.unwrap x === I.unwrap (I.up x :: I Int8 (I.MinL Int8) (I.MaxR Int8))
   ]
   where
     l   = I.min        :: I Int8 l r

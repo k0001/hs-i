@@ -90,9 +90,7 @@ instance forall l r. (Inhabited CUInt l r) => With CUInt l r where
     Dict <- leNatural @t @r
     pure (g pt)
 
-instance
-  ( Inhabited CUInt l r, l /= r
-  ) => Discrete CUInt l r where
+instance (Inhabited CUInt l r, l /= r) => Discrete CUInt l r where
   pred' i = UnsafeI (unwrap i - 1) <$ guard (min < i)
   succ' i = UnsafeI (unwrap i + 1) <$ guard (i < max)
 

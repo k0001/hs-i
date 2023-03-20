@@ -90,9 +90,7 @@ instance forall l r. (Inhabited CSize l r) => With CSize l r where
     Dict <- leNatural @t @r
     pure (g pt)
 
-instance
-  ( Inhabited CSize l r, l /= r
-  ) => Discrete CSize l r where
+instance (Inhabited CSize l r, l /= r) => Discrete CSize l r where
   pred' i = UnsafeI (unwrap i - 1) <$ guard (min < i)
   succ' i = UnsafeI (unwrap i + 1) <$ guard (i < max)
 

@@ -90,9 +90,7 @@ instance forall l r. (Inhabited CULong l r) => With CULong l r where
     Dict <- leNatural @t @r
     pure (g pt)
 
-instance
-  ( Inhabited CULong l r, l /= r
-  ) => Discrete CULong l r where
+instance (Inhabited CULong l r, l /= r) => Discrete CULong l r where
   pred' i = UnsafeI (unwrap i - 1) <$ guard (min < i)
   succ' i = UnsafeI (unwrap i + 1) <$ guard (i < max)
 

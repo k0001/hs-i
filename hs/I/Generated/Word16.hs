@@ -90,9 +90,7 @@ instance forall l r. (Inhabited Word16 l r) => With Word16 l r where
     Dict <- leNatural @t @r
     pure (g pt)
 
-instance
-  ( Inhabited Word16 l r, l /= r
-  ) => Discrete Word16 l r where
+instance (Inhabited Word16 l r, l /= r) => Discrete Word16 l r where
   pred' i = UnsafeI (unwrap i - 1) <$ guard (min < i)
   succ' i = UnsafeI (unwrap i + 1) <$ guard (i < max)
 
