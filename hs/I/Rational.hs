@@ -87,13 +87,9 @@ instance forall l r.
   , InhabitedCtx P.Rational ('Just '( 'True, l)) ('Just '( 'True, r))
   ) => Inhabited P.Rational ('Just '( 'True, l)) ('Just '( 'True, r)) where
   inhabitant = min
-  from x0 = do
-    x <- fmap KR.toPrelude (KR.fromPrelude x0)
-    case KR.someRationalVal x of
-      KR.SomeRational (_ :: Proxy t) -> do
-        Dict <- le @l @t
-        Dict <- le @t @r
-        pure (UnsafeI x)
+  from = \x -> UnsafeI x <$ guard (l <= x && x <= r)
+    where l = KR.rationalVal (Proxy @l)
+          r = KR.rationalVal (Proxy @r)
   negate' = from . P.negate . unwrap
   recip' x = case unwrap x of n :% d -> from (d :% n)
   a `plus'` b = from (unwrap a + unwrap b)
@@ -109,13 +105,9 @@ instance forall l r.
   type InhabitedCtx P.Rational ('Just '( 'True, l)) ('Just '( 'False, r)) =
     l < r
   inhabitant = min
-  from x0 = do
-    x <- fmap KR.toPrelude (KR.fromPrelude x0)
-    case KR.someRationalVal x of
-      KR.SomeRational (_ :: Proxy t) -> do
-        Dict <- le @l @t
-        Dict <- lt @t @r
-        pure (UnsafeI x)
+  from = \x -> UnsafeI x <$ guard (l <= x && x < r)
+    where l = KR.rationalVal (Proxy @l)
+          r = KR.rationalVal (Proxy @r)
   negate' = from . P.negate . unwrap
   recip' x = case unwrap x of n :% d -> from (d :% n)
   a `plus'` b = from (unwrap a + unwrap b)
@@ -129,12 +121,8 @@ instance forall l.
   , InhabitedCtx P.Rational ('Just '( 'True, l)) 'Nothing
   ) => Inhabited P.Rational ('Just '( 'True, l)) 'Nothing where
   inhabitant = min
-  from x0 = do
-    x <- fmap KR.toPrelude (KR.fromPrelude x0)
-    case KR.someRationalVal x of
-      KR.SomeRational (_ :: Proxy t) -> do
-        Dict <- le @l @t
-        pure (UnsafeI x)
+  from = \x -> UnsafeI x <$ guard (l <= x)
+    where l = KR.rationalVal (Proxy @l)
   negate' = from . P.negate . unwrap
   recip' x = case unwrap x of n :% d -> from (d :% n)
   a `plus'` b = from (unwrap a + unwrap b)
@@ -150,13 +138,9 @@ instance forall l r.
   type InhabitedCtx P.Rational ('Just '( 'False, l)) ('Just '( 'True, r)) =
     l < r
   inhabitant = max
-  from x0 = do
-    x <- fmap KR.toPrelude (KR.fromPrelude x0)
-    case KR.someRationalVal x of
-      KR.SomeRational (_ :: Proxy t) -> do
-        Dict <- lt @l @t
-        Dict <- le @t @r
-        pure (UnsafeI x)
+  from = \x -> UnsafeI x <$ guard (l < x && x <= r)
+    where l = KR.rationalVal (Proxy @l)
+          r = KR.rationalVal (Proxy @r)
   negate' = from . P.negate . unwrap
   recip' x = case unwrap x of n :% d -> from (d :% n)
   a `plus'` b = from (unwrap a + unwrap b)
@@ -170,12 +154,8 @@ instance forall r.
   , InhabitedCtx P.Rational 'Nothing ('Just '( 'True, r))
   ) => Inhabited P.Rational 'Nothing ('Just '( 'True, r)) where
   inhabitant = max
-  from x0 = do
-    x <- fmap KR.toPrelude (KR.fromPrelude x0)
-    case KR.someRationalVal x of
-      KR.SomeRational (_ :: Proxy t) -> do
-        Dict <- le @t @r
-        pure (UnsafeI x)
+  from = \x -> UnsafeI x <$ guard (x <= r)
+    where r = KR.rationalVal (Proxy @r)
   negate' = from . P.negate . unwrap
   recip' x = case unwrap x of n :% d -> from (d :% n)
   a `plus'` b = from (unwrap a + unwrap b)
@@ -194,13 +174,9 @@ instance forall l r.
     let l' = KR.rationalVal (Proxy @l)
         r' = KR.rationalVal (Proxy @r)
     in UnsafeI (l' + (r' - l') / 2)
-  from x0 = do
-    x <- fmap KR.toPrelude (KR.fromPrelude x0)
-    case KR.someRationalVal x of
-      KR.SomeRational (_ :: Proxy t) -> do
-        Dict <- lt @l @t
-        Dict <- lt @t @r
-        pure (UnsafeI x)
+  from = \x -> UnsafeI x <$ guard (l < x && x < r)
+    where l = KR.rationalVal (Proxy @l)
+          r = KR.rationalVal (Proxy @r)
   negate' = from . P.negate . unwrap
   recip' x = case unwrap x of n :% d -> from (d :% n)
   a `plus'` b = from (unwrap a + unwrap b)
@@ -214,12 +190,8 @@ instance forall r.
   , InhabitedCtx P.Rational 'Nothing ('Just '( 'False, r))
   ) => Inhabited P.Rational 'Nothing ('Just '( 'False, r)) where
   inhabitant = UnsafeI (KR.rationalVal (Proxy @r) - 1)
-  from x0 = do
-    x <- fmap KR.toPrelude (KR.fromPrelude x0)
-    case KR.someRationalVal x of
-      KR.SomeRational (_ :: Proxy t) -> do
-        Dict <- lt @t @r
-        pure (UnsafeI x)
+  from = \x -> UnsafeI x <$ guard (x < r)
+    where r = KR.rationalVal (Proxy @r)
   negate' = from . P.negate . unwrap
   recip' x = case unwrap x of n :% d -> from (d :% n)
   a `plus'` b = from (unwrap a + unwrap b)
@@ -233,12 +205,8 @@ instance forall l.
   , InhabitedCtx P.Rational ('Just '( 'False, l)) 'Nothing
   ) => Inhabited P.Rational ('Just '( 'False, l)) 'Nothing where
   inhabitant = UnsafeI (KR.rationalVal (Proxy @l) + 1)
-  from x0 = do
-    x <- fmap KR.toPrelude (KR.fromPrelude x0)
-    case KR.someRationalVal x of
-      KR.SomeRational (_ :: Proxy t) -> do
-        Dict <- lt @l @t
-        pure (UnsafeI x)
+  from = \x -> UnsafeI x <$ guard (l < x)
+    where l = KR.rationalVal (Proxy @l)
   negate' = from . P.negate . unwrap
   recip' x = case unwrap x of n :% d -> from (d :% n)
   a `plus'` b = from (unwrap a + unwrap b)
