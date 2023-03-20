@@ -97,40 +97,39 @@ tt_Word8' = testGroup ("Interval [" <> show l <> ", " <> show r <> "]")
          else I.from @Word8 @l @r x /== Nothing
 
   , pure $ testProperty "plus'" $ property $ do
-      a <- forAll $ genI @Word8 @l @r
-      b <- forAll $ genI @Word8 @l @r
+      a <- forAll $ genIWord8 @l @r
+      b <- forAll $ genIWord8 @l @r
       let x = toInteger (I.unwrap a) + toInteger (I.unwrap b)
       case I.plus' a b of
         Nothing -> assert (x < l'' || x > r'')
         Just y -> toInteger (I.unwrap y) === x
 
   , pure $ testProperty "mult'" $ property $ do
-      a <- forAll $ genI @Word8 @l @r
-      b <- forAll $ genI @Word8 @l @r
+      a <- forAll $ genIWord8 @l @r
+      b <- forAll $ genIWord8 @l @r
       let x = toInteger (I.unwrap a) * toInteger (I.unwrap b)
       case I.mult' a b of
         Nothing -> assert (x < l'' || x > r'')
         Just y -> toInteger (I.unwrap y) === x
 
   , pure $ testProperty "minus'" $ property $ do
-      a <- forAll $ genI @Word8 @l @r
-      b <- forAll $ genI @Word8 @l @r
+      a <- forAll $ genIWord8 @l @r
+      b <- forAll $ genIWord8 @l @r
       let x = toInteger (I.unwrap a) - toInteger (I.unwrap b)
       case I.minus' a b of
         Nothing -> assert (x < l'' || x > r'')
         Just y -> toInteger (I.unwrap y) === x
 
   , case cmpNat (Proxy @0) (Proxy @r) of
-      LTI -> pure $ testProperty "div'" $ property $ do
-        a <- forAll $ genI @Word8 @l @r
-        b <- forAll $ Gen.filter (\x -> I.unwrap x /= 0) (genI @Word8 @l @r)
+      EQI -> mzero
+      _ -> pure $ testProperty "div'" $ property $ do
+        a <- forAll $ genIWord8 @l @r
+        b <- forAll $ Gen.filter (\x -> I.unwrap x /= 0) (genIWord8 @l @r)
         let (q, m) = toInteger (I.unwrap a) `divMod` toInteger (I.unwrap b)
         case I.div' a b of
-          Nothing -> assert (q < l'' || m > r'' || m /= 0 || I.unwrap b == 0)
+          Nothing -> assert (q < l'' || m > r'' || m /= 0)
           Just y -> do q === toInteger (I.unwrap y)
                        m === 0
-                       I.unwrap b /== 0
-      _ -> mzero
 
   , pure $ testProperty "clamp'" $ property $ do
       x <- forAll $ genWord8
@@ -140,19 +139,19 @@ tt_Word8' = testGroup ("Interval [" <> show l <> ", " <> show r <> "]")
           | otherwise -> Just y === I.from x
 
   , pure $ testProperty "with" $ property $ do
-      x <- forAll $ genI @Word8 @l @r
+      x <- forAll $ genIWord8 @l @r
       x === I.with x I.known'
 
   , case cmpNat (Proxy @l) (Proxy @r) of
       LTI ->
         [ testProperty "pred" $ property $ do
-            x <- forAll $ genI @Word8 @l @r
+            x <- forAll $ genIWord8 @l @r
             case I.pred' x of
               Nothing -> x === l
               Just y -> do x /== l
                            I.unwrap y === I.unwrap x - 1
         , testProperty "succ" $ property $ do
-            x <- forAll $ genI @Word8 @l @r
+            x <- forAll $ genIWord8 @l @r
             case I.succ' x of
               Nothing -> x === r
               Just y -> do x /== r
@@ -174,28 +173,40 @@ tt_Word8' = testGroup ("Interval [" <> show l <> ", " <> show r <> "]")
 genWord8 :: MonadGen m => m Word8
 genWord8 = Gen.integral $ Range.constant minBound maxBound
 
+genInt8 :: MonadGen m => m Int8
+genInt8 = Gen.integral $ Range.constant minBound maxBound
+
+genNatural :: MonadGen m => m Natural
+genNatural = Gen.integral $ Range.linear 0 (10 ^ (100 :: Int))
+
+genInteger :: MonadGen m => m Integer
+genInteger = Gen.integral $ Range.linearFrom 0 (negate (10 ^ (100 :: Int)))
+                                               (10 ^ (100 :: Int))
+
+genRational :: MonadGen m => m Rational
+genRational = do
+  n <- genInteger
+  d <- Gen.integral $ Range.linear 1 (10 ^ (100 :: Int))
+  pure (n :% d)
+
 --------------------------------------------------------------------------------
 
-class GenI x where
-  genI :: forall l r m. (MonadGen m, I.Shove x l r) => m (I x l r)
+genIWord8 :: forall l r m. (MonadGen m, I.Shove Word8 l r) => m (I Word8 l r)
+genIWord8 = I.shove <$> genWord8
 
-instance GenI Int8 where
-  genI = fmap I.shove $ Gen.integral $ Range.constant minBound maxBound
 
-instance GenI Word8 where
-  genI = fmap I.shove $ Gen.integral $ Range.constant minBound maxBound
+genIInt8 :: forall l r m. (MonadGen m, I.Shove Int8 l r) => m (I Int8 l r)
+genIInt8 = I.shove <$> genInt8
 
-instance GenI Natural where
-  genI = fmap I.shove $ Gen.integral $ Range.linear 0 (10 ^ (100 :: Int))
+genINatural
+  :: forall l r m. (MonadGen m, I.Shove Natural l r) => m (I Natural l r)
+genINatural = I.shove <$> genNatural
 
-instance GenI Integer where
-  genI = fmap I.shove $ Gen.integral $
-    Range.linearFrom 0 (negate (10 ^ (100 :: Int))) (10 ^ (100 :: Int))
+genIInteger
+  :: forall l r m. (MonadGen m, I.Shove Integer l r) => m (I Integer l r)
+genIInteger = I.shove <$> genInteger
 
-instance GenI Rational where
-  genI = do
-    n <- Gen.integral $ Range.linearFrom 0 (negate (10 ^ (100 :: Int)))
-                                           (10 ^ (100 :: Int))
-    d <- Gen.integral $ Range.linear 1 (10 ^ (100 :: Int))
-    pure $ I.shove (n :% d)
+genIRational
+  :: forall l r m. (MonadGen m, I.Shove Rational l r) => m (I Rational l r)
+genIRational = I.shove <$> genRational
 
