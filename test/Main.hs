@@ -633,18 +633,25 @@ tt_Integer = testGroup "Integer"
       x <- forAll genInteger
       x === I.unwrap (I.wrap x)
 
+  , tt_Integer'lr @(N 100) @(N 100)
+  , tt_Integer'lr @(N 100) @(N 10)
+  , tt_Integer'lr @(N 100) @(N 1)
+  , tt_Integer'lr @(N 100) @(N 0)
+  , tt_Integer'lr @(N 1)   @(N 1)
+  , tt_Integer'lr @(N 1)   @(P 0)
   , tt_Integer'lr @(P 0)   @(P 0)
   , tt_Integer'lr @(P 0)   @(P 1)
-  , tt_Integer'lr @(P 0)   @(P 100)
-  , tt_Integer'l  @(P 0)
-
   , tt_Integer'lr @(P 1)   @(P 1)
+  , tt_Integer'lr @(P 0)   @(P 100)
   , tt_Integer'lr @(P 1)   @(P 100)
-  , tt_Integer'l  @(P 1)
-
-  , tt_Integer'lr @(P 10)  @(P 10)
   , tt_Integer'lr @(P 10)  @(P 100)
-  , tt_Integer'l  @(P 10)
+  , tt_Integer'lr @(P 100) @(P 100)
+
+  , tt_Integer'l  @(N 100)
+  , tt_Integer'l  @(N 1)
+  , tt_Integer'l  @(P 0)
+  , tt_Integer'l  @(P 1)
+  , tt_Integer'l  @(P 100)
   ]
 
 tt_Integer'lr
