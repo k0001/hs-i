@@ -192,30 +192,34 @@ instance forall t.
 instance forall l r.
   ( Inhabited P.Integer ('Just l) ('Just r)
   ) => With P.Integer ('Just l) ('Just r) where
-  with x g | K.SomeInteger (pt :: Proxy t) <- K.someIntegerVal (unwrap x) =
-    fromMaybe (error "I.with(Integer): impossible") $ do
-      Dict <- leInteger @l @t
-      Dict <- leInteger @t @r
-      pure (g pt)
+  with x g = case K.someIntegerVal (unwrap x) of
+    K.SomeInteger (pt :: Proxy t) ->
+      fromMaybe (error "I.with(Integer): impossible") $ do
+        Dict <- leInteger @l @t
+        Dict <- leInteger @t @r
+        pure (g pt)
 
 instance forall l.
   ( Inhabited P.Integer ('Just l) 'Nothing
   ) => With P.Integer ('Just l) 'Nothing where
-  with x g | K.SomeInteger (pt :: Proxy t) <- K.someIntegerVal (unwrap x) =
-    fromMaybe (error "I.with(Integer): impossible") $ do
-      Dict <- leInteger @l @t
-      pure (g pt)
+  with x g = case K.someIntegerVal (unwrap x) of
+    K.SomeInteger (pt :: Proxy t) ->
+      fromMaybe (error "I.with(Integer): impossible") $ do
+        Dict <- leInteger @l @t
+        pure (g pt)
 
 instance forall r.
   ( Inhabited P.Integer 'Nothing ('Just r)
   ) => With P.Integer 'Nothing ('Just r) where
-  with x g | K.SomeInteger (pt :: Proxy t) <- K.someIntegerVal (unwrap x) =
-    fromMaybe (error "I.with(Integer): impossible") $ do
-      Dict <- leInteger @t @r
-      pure (g pt)
+  with x g = case K.someIntegerVal (unwrap x) of
+    K.SomeInteger (pt :: Proxy t) ->
+      fromMaybe (error "I.with(Integer): impossible") $ do
+        Dict <- leInteger @t @r
+        pure (g pt)
 
 instance With P.Integer 'Nothing 'Nothing where
-  with x g | K.SomeInteger (pt :: Proxy t) <- K.someIntegerVal (unwrap x) = g pt
+  with x g = case K.someIntegerVal (unwrap x) of
+    K.SomeInteger (pt :: Proxy t) -> g pt
 
 --------------------------------------------------------------------------------
 
