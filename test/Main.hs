@@ -378,15 +378,15 @@ tt_Natural = testGroup "Natural"
   , tt_Natural'lr @0   @0
   , tt_Natural'lr @0   @1
   , tt_Natural'lr @0   @100
-  --, tt_Natural'l  @0   @'Nothing
+  , tt_Natural'l  @0
 
   , tt_Natural'lr @1   @1
   , tt_Natural'lr @1   @100
-  --, tt_Natural'l  @1   @'Nothing
+  , tt_Natural'l  @1
 
   , tt_Natural'lr @10  @10
   , tt_Natural'lr @10  @100
-  --, tt_Natural'l  @10  @'Nothing
+  , tt_Natural'l  @10
   ]
 
 tt_Natural'lr
@@ -512,6 +512,117 @@ tt_Natural'lr = testGroup ("Interval [" <> show l <> ", " <> show r <> "]")
     r   = I.max        :: I Natural l ('Just r)
     r'  = I.unwrap r   :: Natural
     r'' = toInteger r' :: Integer
+
+
+tt_Natural'l
+  :: forall (l :: I.L Natural)
+  .  I.Inhabited Natural l 'Nothing
+  => TestTree
+tt_Natural'l = testGroup ("Interval [" <> show l <> ", infinity)")
+  $ concat
+  [ pure $ testProperty "from" $ property $ do
+      x <- forAll genNatural
+      case I.from @Natural @l @'Nothing x of
+        Nothing -> assert (x < l')
+        Just y -> do assert (x >= l')
+                     I.unwrap y === x
+
+  , pure $ testProperty "shove" $ property $ do
+      x <- forAll genNatural
+      let y = I.shove @Natural @l @'Nothing x
+      I.from (I.unwrap y) === Just y
+      if x < l'
+         then I.from @Natural @l @'Nothing x === Nothing
+         else I.from @Natural @l @'Nothing x /== Nothing
+
+  , pure $ testProperty "plus'" $ property $ do
+      a <- forAll $ genINatural @l @'Nothing
+      b <- forAll $ genINatural @l @'Nothing
+      let x = toInteger (I.unwrap a) + toInteger (I.unwrap b)
+      case I.plus' a b of
+        Nothing -> assert (x < l'')
+        Just y -> toInteger (I.unwrap y) === x
+
+  , pure $ testProperty "mult'" $ property $ do
+      a <- forAll $ genINatural @l @'Nothing
+      b <- forAll $ genINatural @l @'Nothing
+      let x = toInteger (I.unwrap a) * toInteger (I.unwrap b)
+      case I.mult' a b of
+        Nothing -> assert (x < l'')
+        Just y -> toInteger (I.unwrap y) === x
+
+
+  , pure $ testProperty "minus'" $ property $ do
+      a <- forAll $ genINatural @l @'Nothing
+      b <- forAll $ genINatural @l @'Nothing
+      let x = toInteger (I.unwrap a) - toInteger (I.unwrap b)
+      case I.minus' a b of
+        Nothing -> assert (x < l'')
+        Just y -> toInteger (I.unwrap y) === x
+
+  , if (l' == 0) then mzero else
+    pure $ testProperty "div'" $ property $ do
+      a <- forAll $ genINatural @l @'Nothing
+      b <- forAll $ Gen.filter (\x -> I.unwrap x /= 0)
+                               (genINatural @l @'Nothing)
+      let (q, m) = toInteger (I.unwrap a) `divMod` toInteger (I.unwrap b)
+      case I.div' a b of
+        Nothing -> assert (q < l'' || m /= 0)
+        Just y -> do q === toInteger (I.unwrap y)
+                     m === 0
+
+  , pure $ testProperty "clamp'" $ property $ do
+      x <- forAll $ genNatural
+      case I.clamp @Natural @l @'Nothing x of
+        y | x < l' -> I.unwrap y === l'
+          | otherwise -> Just y === I.from x
+
+  , pure $ testProperty "with" $ property $ do
+      x <- forAll $ genINatural @l @'Nothing
+      x === I.with x I.known'
+
+  , pure $ testProperty "pred" $ property $ do
+      x <- forAll $ genINatural @l @'Nothing
+      case I.pred' x of
+        Nothing -> x === l
+        Just y -> do x /== l
+                     I.unwrap y === I.unwrap x - 1
+
+  , pure $ testProperty "succ" $ property $ do
+      x <- forAll $ genINatural @l @'Nothing
+      case I.succ' x of
+        Nothing -> failure
+        Just y -> do I.unwrap y === I.unwrap x + 1
+
+  , case L.cmpNat (Proxy @l) (Proxy @0) of
+      EQI -> pure $ testCase "zero" $
+               0 @=? I.unwrap (I.zero @Natural @l @'Nothing)
+      _ -> mzero
+
+  , case leNatural @l @1 of
+      Just Dict -> pure $ testCase "one" $ do
+        1 @=? I.unwrap (I.one @Natural @l @'Nothing)
+      _ -> mzero
+
+  , pure $ testProperty "down" $ property $ do
+      x <- forAll $ genINatural @l @'Nothing
+      Just x === I.down x
+      case I.down x of
+        Nothing -> failure
+        Just y -> I.unwrap x
+              === I.unwrap (y :: I Natural (I.MinL Natural) (I.MaxR Natural))
+
+  , pure $ testProperty "up" $ property $ do
+      x <- forAll $ genINatural @l @'Nothing
+      x === I.up x
+      I.unwrap x ===
+        I.unwrap (I.up x :: I Natural (I.MinL Natural) (I.MaxR Natural))
+
+  ]
+  where
+    l   = I.min        :: I Natural l 'Nothing
+    l'  = I.unwrap l   :: Natural
+    l'' = toInteger l' :: Integer
 
 --------------------------------------------------------------------------------
 
