@@ -179,7 +179,7 @@ tt_Word8' = testGroup ("Interval [" <> show l <> ", " <> show r <> "]")
         1 @=? I.unwrap (I.one @Word8 @l @r)
       _ -> mzero
 
-  , pure $ testProperty "negate" $ property $ do
+  , pure $ testProperty "negate'" $ property $ do
       x <- forAll $ genIWord8 @l @r
       Nothing === I.negate' x
 
@@ -344,10 +344,20 @@ tt_Int8' = testGroup ("Interval [" <> show l <> ", " <> show r <> "]")
         1 @=? I.unwrap (I.one @Int8 @l @r)
       _ -> mzero
 
-  , pure $ testProperty "negate" $ property $ do
+  , pure $ testProperty "negate'" $ property $ do
       x <- forAll $ genIInt8 @l @r
       I.negate' x ===
         (I.from =<< toIntegralSized (negate (toInteger (I.unwrap x))))
+
+  , withDict (negateInteger @r) $
+      case (leInteger @l @(P 0), leInteger @(P 0) @r) of
+        (Just Dict, Just Dict) ->
+          case KI.cmpInteger (Proxy @l) (Proxy @(KI.Negate r)) of
+            EQI -> pure $ testProperty "negate" $ property $ do
+              x <- forAll $ genIInt8 @l @r
+              Just (I.negate x) === I.negate' x
+            _ -> mzero
+        _ -> mzero
 
   , pure $ testProperty "down" $ property $ do
       x <- forAll $ genIInt8 @l @r
@@ -431,3 +441,24 @@ leInteger = case KI.cmpInteger (Proxy @a) (Proxy @b) of
   L.LTI -> Just $ unsafeCoerce (Dict @())
   L.EQI -> Just $ unsafeCoerce (Dict @())
   L.GTI -> Nothing
+
+negateInteger
+  :: forall (a :: KI.Integer)
+  .  (KI.KnownInteger a) :- (KI.KnownInteger (KI.Negate a))
+negateInteger = integerMagic1 negate
+
+--------------------------------------------------------------------------------
+-- TODO: Move this stuff from Data.Constraint.Nat to KindInteger.
+
+newtype IntegerMagic n =
+  IntegerMagic (KI.KnownInteger n => Dict (KI.KnownInteger n))
+
+-- WARNING: Causes SIGSEGV on GHCi 9.4.3. See GHC issue #19667. The workaround
+-- is to run tests with `cabal test` instead.
+integerMagic1
+  :: forall a b
+  .  (Integer -> Integer)  -- ^ a -> b
+  -> (KI.KnownInteger a :- KI.KnownInteger b)
+integerMagic1 f =
+  Sub $ unsafeCoerce (IntegerMagic Dict) $ f (KI.integerVal (Proxy @a))
+
