@@ -672,7 +672,7 @@ instance Inhabited Rational ('Just '( 'False, l)) ('Just '( 'False, r))
 
 instance Inhabited Rational ('Just '( 'False, l)) 'Nothing
   => Shove Rational ('Just '( 'False, l)) 'Nothing where
-  shove = \x -> unsafe $ if x <= l then l + (l - x) else x
+  shove = \x -> unsafe $ if x <= l then l + (l - x) + 1 else x
     where l = KR.rationalVal (Proxy @l)
 
 instance Inhabited Rational 'Nothing ('Just '( 'True, r))
@@ -682,7 +682,7 @@ instance Inhabited Rational 'Nothing ('Just '( 'True, r))
 
 instance Inhabited Rational 'Nothing ('Just '( 'False, r))
   => Shove Rational 'Nothing ('Just '( 'False, r)) where
-  shove = \x -> unsafe $ if r <= x then r - (x - r) else x
+  shove = \x -> unsafe $ if r <= x then r - (x - r) - 1 else x
     where r = KR.rationalVal (Proxy @r)
 
 instance Shove Rational 'Nothing 'Nothing where

@@ -18,7 +18,7 @@ import I.Test.Word8 qualified
 main :: IO ()
 main = Tasty.defaultMainWithIngredients
   [ Tasty.consoleTestReporter, Tasty.listingTests ]
-  $ Tasty.localOption (HedgehogTestLimit (Just 100))
+  $ Tasty.localOption (HedgehogTestLimit (Just 10000))
   $ tt
 
 tt :: TestTree

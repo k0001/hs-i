@@ -82,11 +82,11 @@ tt = testGroup "Rational"
 --  , tt'oo @(10/1)    @(100/1)
 --  , tt'oo @(100/1)   @(100/1)
 
---  , tt'ou @(N 100/1)
---  , tt'ou @(N 1/1)
---  , tt'ou @(0/1)
---  , tt'ou @(1/1)
---  , tt'ou @(100/1)
+  , tt'ou @(N 100/1)
+  , tt'ou @(N 1/1)
+  , tt'ou @(0/1)
+  , tt'ou @(1/1)
+  , tt'ou @(100/1)
 
   , tt'uc @(N 100/1)
   , tt'uc @(N 1/1)
@@ -542,6 +542,104 @@ tt'oc = testGroup ("Interval (" <> show l' <> ", " <> show r <> "]")
     r  = I.max :: I Rational ('Just '( 'False, l)) ('Just '( 'True, r))
     r' = I.unwrap r :: Rational
 
+tt'ou
+  :: forall (l :: KR.Rational)
+  .  I.Inhabited Rational ('Just '( 'False, l)) 'Nothing
+  => TestTree
+tt'ou = testGroup ("Interval (" <> show l' <> ", infinity)")
+  $ concat
+  [ pure $ testProperty "from" $ property $ do
+      x <- forAll genRational
+      case I.from @Rational @('Just '( 'False, l)) @'Nothing x of
+        Nothing -> assert (x <= l')
+        Just y -> do assert (x > l')
+                     I.unwrap y === x
+
+  , pure $ testProperty "shove" $ property $ do
+          -- TODO test cover at end
+      x <- forAll genRational
+      let y = I.shove @Rational @('Just '( 'False, l)) @'Nothing x
+      I.from (I.unwrap y) === Just y
+      if x <= l'
+         then I.from @Rational @('Just '( 'False, l)) @'Nothing x === Nothing
+         else I.from @Rational @('Just '( 'False, l)) @'Nothing x /== Nothing
+
+  , pure $ testProperty "plus'" $ property $ do
+      a <- forAll $ genIRational @('Just '( 'False, l)) @'Nothing
+      b <- forAll $ genIRational @('Just '( 'False, l)) @'Nothing
+      let x = I.unwrap a + I.unwrap b
+      case I.plus' a b of
+        Nothing -> assert (x <= l')
+        Just y -> I.unwrap y === x
+
+  , case leRational @(0/1) @l of
+      Nothing -> mzero
+      Just Dict -> pure $ testProperty "plus" $ property $ do
+        a <- forAll $ genIRational @('Just '( 'False, l)) @'Nothing
+        b <- forAll $ genIRational @('Just '( 'False, l)) @'Nothing
+        Just (I.plus a b) === I.plus' a b
+
+  , pure $ testProperty "mult'" $ property $ do
+      a <- forAll $ genIRational @('Just '( 'False, l)) @'Nothing
+      b <- forAll $ genIRational @('Just '( 'False, l)) @'Nothing
+      let x = I.unwrap a * I.unwrap b
+      case I.mult' a b of
+        Nothing -> assert (x <= l')
+        Just y -> I.unwrap y === x
+
+  , case leRational @(1/1) @l of
+      Nothing -> mzero
+      Just Dict -> pure $ testProperty "mult" $ property $ do
+        a <- forAll $ genIRational @('Just '( 'False, l)) @'Nothing
+        b <- forAll $ genIRational @('Just '( 'False, l)) @'Nothing
+        Just (I.mult a b) === I.mult' a b
+
+  , pure $ testProperty "minus'" $ property $ do
+      a <- forAll $ genIRational @('Just '( 'False, l)) @'Nothing
+      b <- forAll $ genIRational @('Just '( 'False, l)) @'Nothing
+      let x = I.unwrap a - I.unwrap b
+      case I.minus' a b of
+        Nothing -> assert (x <= l')
+        Just y -> I.unwrap y === x
+
+  , if (l' == 0) then mzero else
+    pure $ testProperty "div'" $ property $ do
+      a <- forAll $ genIRational @('Just '( 'False, l)) @'Nothing
+      b <- forAll $ Gen.filter (\x -> I.unwrap x /= 0) genIRational
+      I.div' a b === I.from (I.unwrap a / I.unwrap b)
+
+  , pure $ testProperty "with" $ property $ do
+      x <- forAll $ genIRational @('Just '( 'False, l)) @'Nothing
+      x === I.with x I.known'
+
+  , case ltRational @l @(0/1) of
+      Just Dict -> pure $ testCase "zero" $ do
+        0 @=? I.unwrap (I.zero @Rational @('Just '( 'False, l)) @'Nothing)
+      _ -> mzero
+
+  , case ltRational @l @(1/1) of
+      Just Dict -> pure $ testCase "one" $ do
+        1 @=? I.unwrap (I.one @Rational @('Just '( 'False, l)) @'Nothing)
+      _ -> mzero
+
+  , pure $ testProperty "down" $ property $ do
+      x <- forAll $ genIRational @('Just '( 'False, l)) @'Nothing
+      Just x === I.down x
+      case I.down x of
+        Nothing -> failure
+        Just y -> I.unwrap x
+              === I.unwrap (y :: I Rational (I.MinL Rational) (I.MaxR Rational))
+
+  , pure $ testProperty "up" $ property $ do
+      x <- forAll $ genIRational @('Just '( 'False, l)) @'Nothing
+      x === I.up x
+      I.unwrap x ===
+        I.unwrap (I.up x :: I Rational (I.MinL Rational) (I.MaxR Rational))
+
+  ]
+  where
+    l' = KR.rationalVal (Proxy @l) :: Rational
+
 tt'uc
   :: forall (r :: KR.Rational)
   .  I.Inhabited Rational 'Nothing ('Just '( 'True, r))
@@ -633,7 +731,6 @@ tt'uc = testGroup ("Interval (-infinity, " <> show r <> "]")
       x === I.up x
       I.unwrap x ===
         I.unwrap (I.up x :: I Rational (I.MinL Rational) (I.MaxR Rational))
-
   ]
   where
     r   = I.max        :: I Rational 'Nothing ('Just '( 'True, r))
