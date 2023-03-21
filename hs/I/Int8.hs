@@ -49,7 +49,7 @@ instance
   ( Interval Int8 l r, InhabitedCtx Int8 l r
   ) => Inhabited Int8 l r where
   inhabitant = min
-  from = \x -> UnsafeI x <$ guard (l <= x && x <= r)
+  from = \x -> unsafest x <$ guard (l <= x && x <= r)
     where l = fromInteger (K.integerVal (Proxy @l)) :: Int8
           r = fromInteger (K.integerVal (Proxy @r)) :: Int8
 
@@ -90,7 +90,7 @@ instance forall l r t.
   ( Inhabited Int8 l r, KnownCtx Int8 l r t
   ) => Known Int8 l r t where
   type KnownCtx Int8 l r t = (K.KnownInteger t, l <= t, t <= r)
-  known' = UnsafeI . fromInteger . K.integerVal
+  known' = unsafe . fromInteger . K.integerVal
 
 instance forall l r. (Inhabited Int8 l r) => With Int8 l r where
   with x g = case K.someIntegerVal (toInteger (unwrap x)) of
@@ -101,17 +101,17 @@ instance forall l r. (Inhabited Int8 l r) => With Int8 l r where
         pure (g pt)
 
 instance (Inhabited Int8 l r, l /= r) => Discrete Int8 l r where
-  pred' i = UnsafeI (unwrap i - 1) <$ guard (min < i)
-  succ' i = UnsafeI (unwrap i + 1) <$ guard (i < max)
+  pred' i = unsafe (unwrap i - 1) <$ guard (min < i)
+  succ' i = unsafe (unwrap i + 1) <$ guard (i < max)
 
 instance (Zero Int8 l r, l == K.Negate r) => Negate Int8 l r where
-  negate = UnsafeI . P.negate . unwrap
+  negate = unsafe . P.negate . unwrap
 
 instance (Inhabited Int8 l r, l <= K.P 0, K.P 0 <= r) => Zero Int8 l r where
-  zero = UnsafeI 0
+  zero = unsafe 0
 
 instance (Inhabited Int8 l r, l <= K.P 1, K.P 1 <= r) => One Int8 l r where
-  one = UnsafeI 1
+  one = unsafe 1
 
 instance forall l r. (Inhabited Int8 l r) => Shove Int8 l r where
   shove = \x -> fromMaybe (error "shove(Int8): impossible") $

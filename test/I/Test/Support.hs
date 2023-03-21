@@ -16,6 +16,7 @@ module I.Test.Support
 
   , leNatural
   , leInteger
+  , leRational
 
   , negateInteger
   ) where
@@ -24,12 +25,13 @@ import Data.Constraint
 import Data.Int
 import Data.Proxy
 import Data.Word
-import GHC.Real (Ratio((:%)))
+import GHC.Real ((%))
 import GHC.TypeLits qualified as L
 import Hedgehog (MonadGen)
 import qualified Hedgehog.Gen as Gen
 import qualified Hedgehog.Range as Range
 import KindInteger qualified as KI
+import KindRational qualified as KR
 import Numeric.Natural
 import Unsafe.Coerce (unsafeCoerce)
 
@@ -55,7 +57,7 @@ genRational :: MonadGen m => m Rational
 genRational = do
   n <- genInteger
   d <- Gen.integral $ Range.linear 1 (10 ^ (100 :: Int))
-  pure (n :% d)
+  pure (n % d)
 
 --------------------------------------------------------------------------------
 
@@ -98,6 +100,15 @@ leInteger = case KI.cmpInteger (Proxy @a) (Proxy @b) of
   L.EQI -> Just $ unsafeCoerce (Dict @())
   L.GTI -> Nothing
 
+leRational
+  :: forall (a :: KR.Rational) (b :: KR.Rational)
+  .  (KR.KnownRational a, KR.KnownRational b)
+  => Maybe (Dict (a L.<= b))
+leRational = case KR.cmpRational (Proxy @a) (Proxy @b) of
+  L.LTI -> Just $ unsafeCoerce (Dict @())
+  L.EQI -> Just $ unsafeCoerce (Dict @())
+  L.GTI -> Nothing
+
 --------------------------------------------------------------------------------
 -- TODO: Move this stuff to KindInteger (ideas from Data.Constraint.Nat)
 
@@ -110,8 +121,8 @@ integerMagic1
   :: forall a b
   .  (Integer -> Integer)  -- ^ a -> b
   -> (KI.KnownInteger a :- KI.KnownInteger b)
-integerMagic1 f =
-  Sub $ unsafeCoerce (IntegerMagic Dict) $ f (KI.integerVal (Proxy @a))
+integerMagic1 f = Sub $ unsafeCoerce (IntegerMagic Dict)
+                      $ f (KI.integerVal (Proxy @a))
 
 negateInteger
   :: forall (a :: KI.Integer)

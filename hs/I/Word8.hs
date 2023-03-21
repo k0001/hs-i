@@ -49,7 +49,7 @@ instance
   ( Interval Word8 l r, InhabitedCtx Word8 l r
   ) => Inhabited Word8 l r where
   inhabitant = min
-  from = \x -> UnsafeI x <$ guard (l <= x && x <= r)
+  from = \x -> unsafest x <$ guard (l <= x && x <= r)
     where l = fromInteger (L.natVal (Proxy @l)) :: Word8
           r = fromInteger (L.natVal (Proxy @r)) :: Word8
 
@@ -80,7 +80,7 @@ instance forall l r t.
   ( Inhabited Word8 l r, KnownCtx Word8 l r t
   ) => Known Word8 l r t where
   type KnownCtx Word8 l r t = (L.KnownNat t, l <= t, t <= r)
-  known' = UnsafeI . fromInteger . L.natVal
+  known' = unsafe . fromInteger . L.natVal
 
 instance forall l r. (Inhabited Word8 l r) => With Word8 l r where
   with x g = fromMaybe (error "I.with: impossible") $ do
@@ -90,17 +90,17 @@ instance forall l r. (Inhabited Word8 l r) => With Word8 l r where
     pure (g pt)
 
 instance (Inhabited Word8 l r, l /= r) => Discrete Word8 l r where
-  pred' i = UnsafeI (unwrap i - 1) <$ guard (min < i)
-  succ' i = UnsafeI (unwrap i + 1) <$ guard (i < max)
+  pred' i = unsafe (unwrap i - 1) <$ guard (min < i)
+  succ' i = unsafe (unwrap i + 1) <$ guard (i < max)
 
 instance (Inhabited Word8 0 r) => Zero Word8 0 r where
-  zero = UnsafeI 0
+  zero = unsafe 0
 
 instance (Inhabited Word8 l r, l <= 1, 1 <= r) => One Word8 l r where
-  one = UnsafeI 1
+  one = unsafe 1
 
 instance forall l r. (Inhabited Word8 l r) => Shove Word8 l r where
-  shove = \x -> UnsafeI $ fromInteger (mod (toInteger x) (r - l + 1) + l)
+  shove = \x -> unsafe $ fromInteger (mod (toInteger x) (r - l + 1) + l)
     where l = toInteger (unwrap (min @Word8 @l @r))
           r = toInteger (unwrap (max @Word8 @l @r))
 

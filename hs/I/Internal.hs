@@ -18,6 +18,7 @@ import Data.Word
 import Data.Type.Equality
 import Foreign.C.Types
 import GHC.TypeLits qualified as L
+import GHC.Stack
 import KindInteger qualified as KI
 import KindRational qualified as KR
 import Prelude hiding (min, max, div, pred, succ, recip, negate)
@@ -172,6 +173,28 @@ class (Interval x l r, InhabitedCtx x l r)
   div' a b = mult' a =<< recip' b
   {-# INLINE div' #-}
 
+-- | 'unsafe' allows you to wrap an @x@ in an @'I' x l r@, failing
+-- with 'error' if the @x@ is outside the interval.
+--
+-- __WARNING__: This function calls 'from', which means that you can't use
+-- it to implement 'from'. You will have to use 'unsafest' in that case.
+-- Your code will loop indefinitely otherwise.
+unsafe :: forall x l r. (HasCallStack, Inhabited x l r) => x -> I x l r
+unsafe = fromMaybe (error "I.unsafe: input outside interval") . from
+{-# INLINE unsafe #-}
+
+-- | 'unsafest' allows you to wrap an @x@ in an @'I' x l r@ without
+-- checking whether the @x@ is within the interval ends.
+--
+-- __WARNING__: This function is fast because it doesn't do any work, but also
+-- it is very dangerous because it ignores all the safety supposedly given by
+-- the @'I' x l r@ type.  Don't use this unless you have proved by other means
+-- that the @x@ is within the @'I' x l r@ interval. Otherwise, please use
+-- 'from', or even 'unsafe'.
+unsafest :: forall x l r. x -> I x l r
+unsafest = coerce
+{-# INLINE unsafest #-}
+
 class (Inhabited x l r) => Clamp (x :: Type) (l :: L x) (r :: R x) where
   -- | Wrap @x@ in @'I' x l r@, making sure that @x@ is within the interval
   -- ends by clamping it to @'MinI' x l r@ if less than @l@, or to
@@ -186,7 +209,7 @@ class (Inhabited x l r) => Clamp (x :: Type) (l :: L x) (r :: R x) where
   clamp = \case
     x | x <= unwrap min_ -> min_
       | x >= unwrap max_ -> max_
-      | otherwise -> UnsafeI x
+      | otherwise -> unsafe x
     where min_ = min -- for both type-inferrence and memoizing purposes
           max_ = max
 
@@ -208,7 +231,7 @@ class (Inhabited x ld rd, Inhabited x lu ru)
 
 -- | Upcast @'I' x ld rd@ into @'I' x lu ru@.
 up :: forall x ld rd lu ru. Up x ld rd lu ru => I x ld rd -> I x lu ru
-up = UnsafeI . unwrap
+up = unsafe . unwrap
 {-# INLINE up #-}
 
 -- | Intervals that contain /discrete/ elements.

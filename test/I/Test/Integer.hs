@@ -7,7 +7,7 @@ import Data.Constraint
 import Data.Proxy
 import Data.Type.Ord
 import Hedgehog (failure, forAll, property, assert, (===), (/==))
-import qualified Hedgehog.Gen as Gen
+import Hedgehog.Gen qualified as Gen
 import KindInteger (N, P)
 import KindInteger qualified as KI
 import Test.Tasty (TestTree, testGroup)

@@ -52,7 +52,7 @@ instance forall l r.
   , InhabitedCtx P.Integer ('Just l) ('Just r)
   ) => Inhabited P.Integer ('Just l) ('Just r) where
   inhabitant = min
-  from = \x -> UnsafeI x <$ guard (l <= x && x <= r)
+  from = \x -> unsafest x <$ guard (l <= x && x <= r)
     where l = K.integerVal (Proxy @l)
           r = K.integerVal (Proxy @r)
   negate' = from . P.negate . unwrap
@@ -69,7 +69,7 @@ instance forall l.
   , InhabitedCtx P.Integer ('Just l) 'Nothing
   ) => Inhabited P.Integer ('Just l) 'Nothing where
   inhabitant = min
-  from = \x -> UnsafeI x <$ guard (l <= x)
+  from = \x -> unsafest x <$ guard (l <= x)
     where l = K.integerVal (Proxy @l)
   negate' = from . P.negate . unwrap
   a `plus'` b = from (unwrap a + unwrap b)
@@ -85,7 +85,7 @@ instance forall r.
   , InhabitedCtx P.Integer 'Nothing ('Just r)
   ) => Inhabited P.Integer 'Nothing ('Just r) where
   inhabitant = max
-  from = \x -> UnsafeI x <$ guard (x <= r)
+  from = \x -> unsafest x <$ guard (x <= r)
     where r = K.integerVal (Proxy @r)
   negate' = from . P.negate . unwrap
   a `plus'` b = from (unwrap a + unwrap b)
@@ -326,21 +326,18 @@ instance Negate P.Integer 'Nothing 'Nothing where
 
 instance Inhabited Integer ('Just l) ('Just r)
   => Shove Integer ('Just l) ('Just r) where
-  shove = \x -> fromMaybe (error "shove(Integer): impossible") $
-                  from $ mod x (r - l + 1) + l
+  shove = \x -> unsafe $ mod x (r - l + 1) + l
     where l = unwrap (min @Integer @('Just l) @('Just r))
           r = unwrap (max @Integer @('Just l) @('Just r))
 
 instance Inhabited Integer ('Just l) 'Nothing
   => Shove Integer ('Just l) 'Nothing where
-   shove = \x -> fromMaybe (error "shove(Integer): impossible") $
-                   from $ if x < l then l + (l - x) else x
+   shove = \x -> unsafe $ if x < l then l + (l - x) else x
      where l = unwrap (min @Integer @('Just l) @'Nothing)
 
 instance Inhabited Integer 'Nothing ('Just r)
   => Shove Integer 'Nothing ('Just r) where
-   shove = \x -> fromMaybe (error "shove(Integer): impossible") $
-                   from $ if x > r then r - (x - r) else x
+   shove = \x -> unsafe $ if x > r then r - (x - r) else x
      where r = unwrap (max @Integer @'Nothing @('Just r))
 
 instance Inhabited Integer 'Nothing 'Nothing

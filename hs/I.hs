@@ -26,6 +26,7 @@ module I
  , Inhabited(..)
  , unwrap
  , wrap
+ , unsafe
  , Clamp(..)
  , Up
  , up
@@ -49,6 +50,8 @@ module I
  , single
    -- * Testing support
  , Shove(..)
+   -- * Danger zone
+ , unsafest
  ) where
 
 import I.Internal

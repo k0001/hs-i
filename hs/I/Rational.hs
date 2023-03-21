@@ -1,7 +1,7 @@
 {-# LANGUAGE AllowAmbiguousTypes #-}
 {-# LANGUAGE UndecidableInstances #-}
 
-{-# OPTIONS_GHC -Wno-orphans #-}
+{-# OPTIONS_GHC -Wno-orphans -Wno-unused-imports #-}
 {-# OPTIONS_HADDOCK not-home #-}
 
 module I.Rational () where
@@ -11,6 +11,7 @@ import Data.Constraint
 import Data.Maybe
 import Data.Proxy
 import Data.Type.Ord
+import Debug.Trace
 import GHC.TypeLits qualified as L
 import GHC.Real (Ratio((:%)))
 import KindRational (type (/))
@@ -87,7 +88,7 @@ instance forall l r.
   , InhabitedCtx P.Rational ('Just '( 'True, l)) ('Just '( 'True, r))
   ) => Inhabited P.Rational ('Just '( 'True, l)) ('Just '( 'True, r)) where
   inhabitant = min
-  from = \x -> UnsafeI x <$ guard (l <= x && x <= r)
+  from = \x -> unsafest x <$ guard (l <= x && x <= r)
     where l = KR.rationalVal (Proxy @l)
           r = KR.rationalVal (Proxy @r)
   negate' = from . P.negate . unwrap
@@ -105,7 +106,7 @@ instance forall l r.
   type InhabitedCtx P.Rational ('Just '( 'True, l)) ('Just '( 'False, r)) =
     l < r
   inhabitant = min
-  from = \x -> UnsafeI x <$ guard (l <= x && x < r)
+  from = \x -> unsafest x <$ guard (l <= x && x < r)
     where l = KR.rationalVal (Proxy @l)
           r = KR.rationalVal (Proxy @r)
   negate' = from . P.negate . unwrap
@@ -121,7 +122,7 @@ instance forall l.
   , InhabitedCtx P.Rational ('Just '( 'True, l)) 'Nothing
   ) => Inhabited P.Rational ('Just '( 'True, l)) 'Nothing where
   inhabitant = min
-  from = \x -> UnsafeI x <$ guard (l <= x)
+  from = \x -> unsafest x <$ guard (l <= x)
     where l = KR.rationalVal (Proxy @l)
   negate' = from . P.negate . unwrap
   recip' x = case unwrap x of n :% d -> from (d :% n)
@@ -138,7 +139,7 @@ instance forall l r.
   type InhabitedCtx P.Rational ('Just '( 'False, l)) ('Just '( 'True, r)) =
     l < r
   inhabitant = max
-  from = \x -> UnsafeI x <$ guard (l < x && x <= r)
+  from = \x -> unsafest x <$ guard (l < x && x <= r)
     where l = KR.rationalVal (Proxy @l)
           r = KR.rationalVal (Proxy @r)
   negate' = from . P.negate . unwrap
@@ -154,7 +155,7 @@ instance forall r.
   , InhabitedCtx P.Rational 'Nothing ('Just '( 'True, r))
   ) => Inhabited P.Rational 'Nothing ('Just '( 'True, r)) where
   inhabitant = max
-  from = \x -> UnsafeI x <$ guard (x <= r)
+  from = \x -> unsafest x <$ guard (x <= r)
     where r = KR.rationalVal (Proxy @r)
   negate' = from . P.negate . unwrap
   recip' x = case unwrap x of n :% d -> from (d :% n)
@@ -173,8 +174,8 @@ instance forall l r.
   inhabitant = -- halfway between l and r
     let l' = KR.rationalVal (Proxy @l)
         r' = KR.rationalVal (Proxy @r)
-    in UnsafeI (l' + (r' - l') / 2)
-  from = \x -> UnsafeI x <$ guard (l < x && x < r)
+    in unsafe (l' + (r' - l') / 2)
+  from = \x -> unsafest x <$ guard (l < x && x < r)
     where l = KR.rationalVal (Proxy @l)
           r = KR.rationalVal (Proxy @r)
   negate' = from . P.negate . unwrap
@@ -189,8 +190,8 @@ instance forall r.
   ( Interval P.Rational 'Nothing ('Just '( 'False, r))
   , InhabitedCtx P.Rational 'Nothing ('Just '( 'False, r))
   ) => Inhabited P.Rational 'Nothing ('Just '( 'False, r)) where
-  inhabitant = UnsafeI (KR.rationalVal (Proxy @r) - 1)
-  from = \x -> UnsafeI x <$ guard (x < r)
+  inhabitant = unsafe (KR.rationalVal (Proxy @r) - 1)
+  from = \x -> unsafest x <$ guard (x < r)
     where r = KR.rationalVal (Proxy @r)
   negate' = from . P.negate . unwrap
   recip' x = case unwrap x of n :% d -> from (d :% n)
@@ -204,8 +205,8 @@ instance forall l.
   ( Interval P.Rational ('Just '( 'False, l)) 'Nothing
   , InhabitedCtx P.Rational ('Just '( 'False, l)) 'Nothing
   ) => Inhabited P.Rational ('Just '( 'False, l)) 'Nothing where
-  inhabitant = UnsafeI (KR.rationalVal (Proxy @l) + 1)
-  from = \x -> UnsafeI x <$ guard (l < x)
+  inhabitant = unsafe (KR.rationalVal (Proxy @l) + 1)
+  from = \x -> unsafest x <$ guard (l < x)
     where l = KR.rationalVal (Proxy @l)
   negate' = from . P.negate . unwrap
   recip' x = case unwrap x of n :% d -> from (d :% n)
@@ -235,19 +236,19 @@ instance (Inhabited Rational ('Just '( 'True, l)) 'Nothing)
   => Clamp          Rational ('Just '( 'True, l)) 'Nothing where
   clamp = \case
     x | x <= unwrap min_ -> min_
-      | otherwise -> UnsafeI x
+      | otherwise -> unsafe x
     where min_ = min
 
 instance (Inhabited Rational 'Nothing ('Just '( 'True, r)))
   => Clamp          Rational 'Nothing ('Just '( 'True, r)) where
   clamp = \case
     x | x >= unwrap max_ -> max_
-      | otherwise -> UnsafeI x
+      | otherwise -> unsafe x
     where max_ = max
 
 instance (Inhabited Rational 'Nothing 'Nothing)
   => Clamp          Rational 'Nothing 'Nothing where
-  clamp = UnsafeI
+  clamp = unsafe
 
 --------------------------------------------------------------------------------
 
@@ -335,7 +336,7 @@ instance forall t l r.
   ) => Known P.Rational ('Just '( 'True, l)) ('Just '( 'True, r)) t where
   type KnownCtx P.Rational ('Just '( 'True, l)) ('Just '( 'True, r)) t =
     (KR.KnownRational t, l <= t, t <= r)
-  known' = UnsafeI . KR.rationalVal
+  known' = unsafe . KR.rationalVal
 
 instance forall t l r.
   ( Inhabited P.Rational ('Just '( 'True, l)) ('Just '( 'False, r))
@@ -343,7 +344,7 @@ instance forall t l r.
   ) => Known P.Rational ('Just '( 'True, l)) ('Just '( 'False, r)) t where
   type KnownCtx P.Rational ('Just '( 'True, l)) ('Just '( 'False, r)) t =
     (KR.KnownRational t, l <= t, t < r)
-  known' = UnsafeI . KR.rationalVal
+  known' = unsafe . KR.rationalVal
 
 instance forall t l.
   ( Inhabited P.Rational ('Just '( 'True, l)) 'Nothing
@@ -351,7 +352,7 @@ instance forall t l.
   ) => Known P.Rational ('Just '( 'True, l)) 'Nothing t where
   type KnownCtx P.Rational ('Just '( 'True, l)) 'Nothing t =
     (KR.KnownRational t, l <= t)
-  known' = UnsafeI . KR.rationalVal
+  known' = unsafe . KR.rationalVal
 
 instance forall t l r.
   ( Inhabited P.Rational ('Just '( 'False, l)) ('Just '( 'True, r))
@@ -359,7 +360,7 @@ instance forall t l r.
   ) => Known P.Rational ('Just '( 'False, l)) ('Just '( 'True, r)) t where
   type KnownCtx P.Rational ('Just '( 'False, l)) ('Just '( 'True, r)) t =
     (KR.KnownRational t, l < t, t <= r)
-  known' = UnsafeI . KR.rationalVal
+  known' = unsafe . KR.rationalVal
 
 instance forall t l.
   ( Inhabited P.Rational ('Just '( 'False, l)) 'Nothing
@@ -367,7 +368,7 @@ instance forall t l.
   ) => Known P.Rational ('Just '( 'False, l)) 'Nothing t where
   type KnownCtx P.Rational ('Just '( 'False, l)) 'Nothing t =
     (KR.KnownRational t, l < t)
-  known' = UnsafeI . KR.rationalVal
+  known' = unsafe . KR.rationalVal
 
 instance forall t r.
   ( Inhabited P.Rational 'Nothing ('Just '( 'True, r))
@@ -375,7 +376,7 @@ instance forall t r.
   ) => Known P.Rational 'Nothing ('Just '( 'True, r)) t where
   type KnownCtx P.Rational 'Nothing ('Just '( 'True, r)) t =
     (KR.KnownRational t, t <= r)
-  known' = UnsafeI . KR.rationalVal
+  known' = unsafe . KR.rationalVal
 
 instance forall t r.
   ( Inhabited P.Rational 'Nothing ('Just '( 'False, r))
@@ -383,7 +384,7 @@ instance forall t r.
   ) => Known P.Rational 'Nothing ('Just '( 'False, r)) t where
   type KnownCtx P.Rational 'Nothing ('Just '( 'False, r)) t =
     (KR.KnownRational t, t < r)
-  known' = UnsafeI . KR.rationalVal
+  known' = unsafe . KR.rationalVal
 
 instance forall t l r.
   ( Inhabited P.Rational ('Just '( 'False, l)) ('Just '( 'False, r))
@@ -391,13 +392,13 @@ instance forall t l r.
   ) => Known P.Rational ('Just '( 'False, l)) ('Just '( 'False, r)) t where
   type KnownCtx P.Rational ('Just '( 'False, l)) ('Just '( 'False, r)) t =
     (KR.KnownRational t, l < t, t < r)
-  known' = UnsafeI . KR.rationalVal
+  known' = unsafe . KR.rationalVal
 
 instance forall t.
   ( KnownCtx P.Rational 'Nothing 'Nothing t
   ) => Known P.Rational 'Nothing 'Nothing t where
   type KnownCtx P.Rational 'Nothing 'Nothing t = KR.KnownRational t
-  known' = UnsafeI . KR.rationalVal
+  known' = unsafe . KR.rationalVal
 
 --------------------------------------------------------------------------------
 
@@ -485,41 +486,41 @@ instance With P.Rational 'Nothing 'Nothing where
 
 instance (Inhabited P.Rational ('Just '(il, l)) 'Nothing, 0/1 <= l)
   => Plus P.Rational ('Just '(il, l)) 'Nothing where
-  a `plus` b = UnsafeI (unwrap a + unwrap b)
+  a `plus` b = unsafe (unwrap a + unwrap b)
 
 instance (Inhabited P.Rational 'Nothing ('Just '(ir, r)), r <= 0/1)
   => Plus P.Rational 'Nothing ('Just '(ir, r)) where
-  a `plus` b = UnsafeI (unwrap a + unwrap b)
+  a `plus` b = unsafe (unwrap a + unwrap b)
 
 instance Plus P.Rational 'Nothing 'Nothing where
-  a `plus` b = UnsafeI (unwrap a + unwrap b)
+  a `plus` b = unsafe (unwrap a + unwrap b)
 
 --------------------------------------------------------------------------------
 
 instance
   ( Inhabited P.Rational ('Just '(il, l)) 'Nothing, 1/1 <= l
   ) => Mult P.Rational ('Just '(il, l)) 'Nothing where
-  a `mult` b = UnsafeI (unwrap a * unwrap b)
+  a `mult` b = unsafe (unwrap a * unwrap b)
 
 instance
   ( Inhabited P.Rational ('Just '(il, l)) ('Just '(ir, r)), 0/1 <= l, r <= 1/1
   ) => Mult P.Rational ('Just '(il, l)) ('Just '(ir, r)) where
-  a `mult` b = UnsafeI (unwrap a * unwrap b)
+  a `mult` b = unsafe (unwrap a * unwrap b)
 
 instance Mult P.Rational 'Nothing 'Nothing where
-  a `mult` b = UnsafeI (unwrap a + unwrap b)
+  a `mult` b = unsafe (unwrap a + unwrap b)
 
 --------------------------------------------------------------------------------
 
 instance
   ( Inhabited P.Rational ('Just '(il, l)) ('Just '(ir, r)) , 0/1 < l, r <= 1/1
   ) => Div P.Rational ('Just '(il, l)) ('Just '(ir, r)) where
-  a `div` b = UnsafeI (unwrap a / unwrap b)
+  a `div` b = unsafe (unwrap a / unwrap b)
 
 --------------------------------------------------------------------------------
 
 instance Minus P.Rational 'Nothing 'Nothing where
-  a `minus` b = UnsafeI (unwrap a - unwrap b)
+  a `minus` b = unsafe (unwrap a - unwrap b)
 
 --------------------------------------------------------------------------------
 
@@ -527,44 +528,44 @@ instance
   ( Inhabited P.Rational ('Just '( 'True, l)) ('Just '( 'True, r))
   , l <= 0/1, 0/1 <= r
   ) => Zero P.Rational ('Just '( 'True, l)) ('Just '( 'True, r)) where
-  zero = UnsafeI 0
+  zero = unsafe 0
 
 instance
   ( Inhabited P.Rational ('Just '( 'True, l)) ('Just '( 'False, r))
   , l <= 0/1, 0/1 < r
   ) => Zero P.Rational ('Just '( 'True, l)) ('Just '( 'False, r)) where
-  zero = UnsafeI 0
+  zero = unsafe 0
 
 instance
   ( Inhabited P.Rational ('Just '( 'False, l)) ('Just '( 'True, r))
   , l < 0/1, 0/1 <= r
   ) => Zero P.Rational ('Just '( 'False, l)) ('Just '( 'True, r)) where
-  zero = UnsafeI 0
+  zero = unsafe 0
 
 instance (Inhabited P.Rational ('Just '( 'True, l)) 'Nothing, l <= 0/1)
   => Zero P.Rational ('Just '( 'True, l)) 'Nothing where
-  zero = UnsafeI 0
+  zero = unsafe 0
 
 instance (Inhabited P.Rational ('Just '( 'False, l)) 'Nothing, l < 0/1)
   => Zero P.Rational ('Just '( 'False, l)) 'Nothing where
-  zero = UnsafeI 0
+  zero = unsafe 0
 
 instance (Inhabited P.Rational 'Nothing ('Just '( 'True, r)), 0/1 <= r)
   => Zero P.Rational 'Nothing ('Just '( 'True, r)) where
-  zero = UnsafeI 0
+  zero = unsafe 0
 
 instance (Inhabited P.Rational 'Nothing ('Just '( 'False, r)), 0/1 < r)
   => Zero P.Rational 'Nothing ('Just '( 'False, r)) where
-  zero = UnsafeI 0
+  zero = unsafe 0
 
 instance
   ( Inhabited P.Rational ('Just '( 'False, l)) ('Just '( 'False, r))
   , l < 0/1, 0/1 < r
   ) => Zero P.Rational ('Just '( 'False, l)) ('Just '( 'False, r)) where
-  zero = UnsafeI 0
+  zero = unsafe 0
 
 instance Zero P.Rational 'Nothing 'Nothing where
-  zero = UnsafeI 0
+  zero = unsafe 0
 
 --------------------------------------------------------------------------------
 
@@ -572,44 +573,44 @@ instance
   ( Inhabited P.Rational ('Just '( 'True, l)) ('Just '( 'True, r))
   , l <= 1/1, 1/1 <= r
   ) => One P.Rational ('Just '( 'True, l)) ('Just '( 'True, r)) where
-  one = UnsafeI 1
+  one = unsafe 1
 
 instance
   ( Inhabited P.Rational ('Just '( 'True, l)) ('Just '( 'False, r))
   , l <= 1/1, 1/1 < r
   ) => One P.Rational ('Just '( 'True, l)) ('Just '( 'False, r)) where
-  one = UnsafeI 1
+  one = unsafe 1
 
 instance
   ( Inhabited P.Rational ('Just '( 'False, l)) ('Just '( 'True, r))
   , l < 1/1, 1/1 <= r
   ) => One P.Rational ('Just '( 'False, l)) ('Just '( 'True, r)) where
-  one = UnsafeI 1
+  one = unsafe 1
 
 instance (Inhabited P.Rational ('Just '( 'True, l)) 'Nothing, l <= 1/1)
   => One P.Rational ('Just '( 'True, l)) 'Nothing where
-  one = UnsafeI 1
+  one = unsafe 1
 
 instance (Inhabited P.Rational ('Just '( 'False, l)) 'Nothing, l < 1/1)
   => One P.Rational ('Just '( 'False, l)) 'Nothing where
-  one = UnsafeI 1
+  one = unsafe 1
 
 instance (Inhabited P.Rational 'Nothing ('Just '( 'True, r)), 1/1 <= r)
   => One P.Rational 'Nothing ('Just '( 'True, r)) where
-  one = UnsafeI 1
+  one = unsafe 1
 
 instance (Inhabited P.Rational 'Nothing ('Just '( 'False, r)), 1/1 < r)
   => One P.Rational 'Nothing ('Just '( 'False, r)) where
-  one = UnsafeI 1
+  one = unsafe 1
 
 instance
   ( Inhabited P.Rational ('Just '( 'False, l)) ('Just '( 'False, r))
   , l < 1/1, 1/1 < r
   ) => One P.Rational ('Just '( 'False, l)) ('Just '( 'False, r)) where
-  one = UnsafeI 1
+  one = unsafe 1
 
 instance One P.Rational 'Nothing 'Nothing where
-  one = UnsafeI 1
+  one = unsafe 1
 
 --------------------------------------------------------------------------------
 
@@ -617,10 +618,68 @@ instance
   ( Zero P.Rational ('Just '(i, l)) ('Just '(i, r))
   , l KR.== KR.Negate r
   ) => Negate P.Rational ('Just '(i, l)) ('Just '(i, r)) where
-  negate = UnsafeI . P.negate . unwrap
+  negate = unsafe . P.negate . unwrap
 
 instance Negate P.Rational 'Nothing 'Nothing where
-  negate = UnsafeI . P.negate . unwrap
+  negate = unsafe . P.negate . unwrap
+
+--------------------------------------------------------------------------------
+
+instance Inhabited Rational ('Just '( 'True, l)) ('Just '( 'True, r))
+  => Shove Rational ('Just '( 'True, l)) ('Just '( 'True, r)) where
+  shove | d == 0    = \_ -> unsafe l
+        | d < 0 = error "d<0"
+        | otherwise = \x -> unsafe (r - f (abs (abs r - abs x)))
+    where
+      f a | a <= d    = a
+          | otherwise = f (a - d)
+      d = r - l
+      l = KR.rationalVal (Proxy @l)
+      r = KR.rationalVal (Proxy @r)
+
+instance Inhabited Rational ('Just '( 'True, l)) ('Just '( 'False, r))
+  => Shove Rational ('Just '( 'True, l)) ('Just '( 'False, r)) where
+  shove = \_x -> error "TODO"
+
+instance Inhabited Rational ('Just '( 'True, l)) 'Nothing
+  => Shove Rational ('Just '( 'True, l)) 'Nothing where
+  shove = \x -> unsafe (if l <= x then x else l + (l - x))
+    where l = KR.rationalVal (Proxy @l)
+
+instance Inhabited Rational ('Just '( 'False, l)) ('Just '( 'True, r))
+  => Shove Rational ('Just '( 'False, l)) ('Just '( 'True, r)) where
+  shove = \_x -> error "TODO"
+    where
+      _l = KR.rationalVal @l
+      _r = KR.rationalVal @r
+
+instance Inhabited Rational ('Just '( 'False, l)) ('Just '( 'False, r))
+  => Shove Rational ('Just '( 'False, l)) ('Just '( 'False, r)) where
+  shove = \_x -> error "TODO"
+    where
+      _l = KR.rationalVal @l
+      _r = KR.rationalVal @r
+
+instance Inhabited Rational ('Just '( 'False, l)) 'Nothing
+  => Shove Rational ('Just '( 'False, l)) 'Nothing where
+  shove = \_x -> error "TODO"
+    where
+      _l = KR.rationalVal @l
+
+instance Inhabited Rational 'Nothing ('Just '( 'True, r))
+  => Shove Rational 'Nothing ('Just '( 'True, r)) where
+  shove = \_x -> error "TODO"
+    where
+      _r = KR.rationalVal @r
+
+instance Inhabited Rational 'Nothing ('Just '( 'False, r))
+  => Shove Rational 'Nothing ('Just '( 'False, r)) where
+  shove = \_x -> error "TODO"
+    where
+      _r = KR.rationalVal @r
+
+instance Shove Rational 'Nothing 'Nothing where
+  shove = unsafe
 
 --------------------------------------------------------------------------------
 
@@ -631,7 +690,6 @@ lt = case KR.cmpRational (Proxy @a) (Proxy @b) of
   L.LTI -> Just $ unsafeCoerce (Dict @())
   L.EQI -> Nothing
   L.GTI -> Nothing
-
 
 le :: forall (a :: KR.Rational) (b :: KR.Rational)
    .  (KR.KnownRational a, KR.KnownRational b)

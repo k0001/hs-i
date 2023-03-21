@@ -50,7 +50,7 @@ instance
   ) => Inhabited Natural l ('Just r) where
   type InhabitedCtx Natural l ('Just r) = ()
   inhabitant = min
-  from = \x -> UnsafeI x <$ guard (l <= x && x <= r)
+  from = \x -> unsafest x <$ guard (l <= x && x <= r)
     where l = N.natVal (Proxy @l)
           r = N.natVal (Proxy @r)
   a `plus'` b = from (unwrap a + unwrap b)
@@ -67,7 +67,7 @@ instance
   ) => Inhabited Natural l 'Nothing where
   type InhabitedCtx Natural l 'Nothing = ()
   inhabitant = min
-  from = \x -> UnsafeI x <$ guard (l <= x)
+  from = \x -> unsafest x <$ guard (l <= x)
     where l = N.natVal (Proxy @l)
   a `plus'` b = pure (a `plus` b)
   a `mult'` b = pure (a `mult` b)
@@ -84,7 +84,7 @@ instance (Inhabited Natural l ('Just r)) => Clamp Natural l ('Just r)
 instance (Inhabited Natural l 'Nothing) => Clamp Natural l 'Nothing where
   clamp = \case
     x | x <= unwrap min_ -> min_
-      | otherwise -> UnsafeI x
+      | otherwise -> unsafe x
     where min_ = min
 
 --------------------------------------------------------------------------------
@@ -108,13 +108,13 @@ instance forall l r t.
   ( Inhabited Natural l ('Just r), KnownCtx Natural l ('Just r) t
   ) => Known Natural l ('Just r) t where
   type KnownCtx Natural l ('Just r) t = (N.KnownNat t, l <= t, t <= r)
-  known' = UnsafeI . N.natVal
+  known' = unsafe . N.natVal
 
 instance forall t l.
   ( Inhabited Natural l 'Nothing, KnownCtx Natural l 'Nothing t
   ) => Known Natural l 'Nothing t where
   type KnownCtx Natural l 'Nothing t = (N.KnownNat t, l <= t)
-  known' = UnsafeI . N.natVal
+  known' = unsafe . N.natVal
 
 --------------------------------------------------------------------------------
 
@@ -139,52 +139,50 @@ instance forall l. (Inhabited Natural l 'Nothing)
 
 instance (Inhabited Natural l ('Just r), l /= r)
   => Discrete Natural l ('Just r) where
-  pred' i = UnsafeI (unwrap i - 1) <$ guard (min < i)
-  succ' i = UnsafeI (unwrap i + 1) <$ guard (i < max)
+  pred' i = unsafe (unwrap i - 1) <$ guard (min < i)
+  succ' i = unsafe (unwrap i + 1) <$ guard (i < max)
 
 instance (Inhabited Natural l 'Nothing) => Discrete Natural l 'Nothing where
-  pred' i = UnsafeI (unwrap i - 1) <$ guard (min < i)
+  pred' i = unsafe (unwrap i - 1) <$ guard (min < i)
   succ' = pure . succ
 
 --------------------------------------------------------------------------------
 
 instance (Inhabited Natural l 'Nothing) => Plus Natural l 'Nothing where
-  plus a b = UnsafeI (unwrap a + unwrap b)
+  plus a b = unsafe (unwrap a + unwrap b)
 
 --------------------------------------------------------------------------------
 
 instance (Inhabited Natural l 'Nothing) => Mult Natural l 'Nothing where
-  mult a b = UnsafeI (unwrap a * unwrap b)
+  mult a b = unsafe (unwrap a * unwrap b)
 
 --------------------------------------------------------------------------------
 
 instance (Discrete Natural l 'Nothing) => Succ Natural l 'Nothing where
-  succ i = UnsafeI (unwrap i + 1)
+  succ i = unsafe (unwrap i + 1)
 
 --------------------------------------------------------------------------------
 
 instance (Inhabited Natural 0 r) => Zero Natural 0 r where
-  zero = UnsafeI 0
+  zero = unsafe 0
 
 --------------------------------------------------------------------------------
 
 instance (Inhabited Natural l 'Nothing, l <= 1) => One Natural l 'Nothing where
-  one = UnsafeI 1
+  one = unsafe 1
 
 instance (Inhabited Natural l ('Just r), l <= 1, 1 <= r)
   => One Natural l ('Just r) where
-  one = UnsafeI 1
+  one = unsafe 1
 
 --------------------------------------------------------------------------------
 
 instance (Inhabited Natural l ('Just r)) => Shove Natural l ('Just r) where
-  shove = \x -> fromMaybe (error "shove(Natural): impossible") $
-                  from $ mod x (r - l + 1) + l
+  shove = \x -> unsafe $ mod x (r - l + 1) + l
     where l = unwrap (min @Natural @l @('Just r))
           r = unwrap (max @Natural @l @('Just r))
 
 instance (Inhabited Natural l 'Nothing) => Shove Natural l 'Nothing where
-   shove = \x -> fromMaybe (error "shove(Natural): impossible") $
-                   from $ if x < l then l + (l - x) else x
+   shove = \x -> unsafe $ if x < l then l + (l - x) else x
      where l = unwrap (min @Natural @l @'Nothing)
 

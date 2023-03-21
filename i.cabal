@@ -83,6 +83,7 @@ test-suite test
     I.Test.Int8
     I.Test.Integer
     I.Test.Natural
+    I.Test.Rational
     I.Test.Support
     I.Test.Word8
   build-depends:
