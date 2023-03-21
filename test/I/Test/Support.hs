@@ -17,6 +17,7 @@ module I.Test.Support
   , leNatural
   , leInteger
   , leRational
+  , ltRational
 
   , negateInteger
   ) where
@@ -24,6 +25,7 @@ module I.Test.Support
 import Data.Constraint
 import Data.Int
 import Data.Proxy
+import Data.Type.Ord
 import Data.Word
 import GHC.Real ((%))
 import GHC.TypeLits qualified as L
@@ -94,7 +96,7 @@ leNatural = case L.cmpNat (Proxy @a) (Proxy @b) of
 leInteger
   :: forall (a :: KI.Integer) (b :: KI.Integer)
   .  (KI.KnownInteger a, KI.KnownInteger b)
-  => Maybe (Dict (a L.<= b))
+  => Maybe (Dict (a <= b))
 leInteger = case KI.cmpInteger (Proxy @a) (Proxy @b) of
   L.LTI -> Just $ unsafeCoerce (Dict @())
   L.EQI -> Just $ unsafeCoerce (Dict @())
@@ -103,10 +105,19 @@ leInteger = case KI.cmpInteger (Proxy @a) (Proxy @b) of
 leRational
   :: forall (a :: KR.Rational) (b :: KR.Rational)
   .  (KR.KnownRational a, KR.KnownRational b)
-  => Maybe (Dict (a L.<= b))
+  => Maybe (Dict (a <= b))
 leRational = case KR.cmpRational (Proxy @a) (Proxy @b) of
   L.LTI -> Just $ unsafeCoerce (Dict @())
   L.EQI -> Just $ unsafeCoerce (Dict @())
+  L.GTI -> Nothing
+
+ltRational
+  :: forall (a :: KR.Rational) (b :: KR.Rational)
+  .  (KR.KnownRational a, KR.KnownRational b)
+  => Maybe (Dict (a < b))
+ltRational = case KR.cmpRational (Proxy @a) (Proxy @b) of
+  L.LTI -> Just $ unsafeCoerce (Dict @())
+  L.EQI -> Nothing
   L.GTI -> Nothing
 
 --------------------------------------------------------------------------------

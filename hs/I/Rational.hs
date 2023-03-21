@@ -508,7 +508,7 @@ instance
   a `mult` b = unsafe (unwrap a * unwrap b)
 
 instance Mult P.Rational 'Nothing 'Nothing where
-  a `mult` b = unsafe (unwrap a + unwrap b)
+  a `mult` b = unsafe (unwrap a * unwrap b)
 
 --------------------------------------------------------------------------------
 
@@ -627,19 +627,23 @@ instance Negate P.Rational 'Nothing 'Nothing where
 
 instance Inhabited Rational ('Just '( 'True, l)) ('Just '( 'True, r))
   => Shove Rational ('Just '( 'True, l)) ('Just '( 'True, r)) where
-  shove | d == 0    = \_ -> unsafe l
-        | d < 0 = error "d<0"
+  shove | d == 0    = \_ -> min
         | otherwise = \x -> unsafe (r - f (abs (abs r - abs x)))
     where
-      f a | a <= d    = a
-          | otherwise = f (a - d)
+      f a = if a <= d then a else f (a - d)
       d = r - l
       l = KR.rationalVal (Proxy @l)
       r = KR.rationalVal (Proxy @r)
 
 instance Inhabited Rational ('Just '( 'True, l)) ('Just '( 'False, r))
   => Shove Rational ('Just '( 'True, l)) ('Just '( 'False, r)) where
-  shove = \_x -> error "TODO"
+  shove | d == 0    = error "shove: impossible uninhabited"
+        | otherwise = \x -> unsafe (l + f (abs (abs r - abs x)))
+    where
+      f a = if a < d then a else f (a - d)
+      d = r - l
+      l = KR.rationalVal (Proxy @l)
+      r = KR.rationalVal (Proxy @r)
 
 instance Inhabited Rational ('Just '( 'True, l)) 'Nothing
   => Shove Rational ('Just '( 'True, l)) 'Nothing where
@@ -648,35 +652,38 @@ instance Inhabited Rational ('Just '( 'True, l)) 'Nothing
 
 instance Inhabited Rational ('Just '( 'False, l)) ('Just '( 'True, r))
   => Shove Rational ('Just '( 'False, l)) ('Just '( 'True, r)) where
-  shove = \_x -> error "TODO"
+  shove | d == 0    = error "shove: impossible uninhabited"
+        | otherwise = \x -> unsafe (r - f (abs (abs r - abs x)))
     where
-      _l = KR.rationalVal @l
-      _r = KR.rationalVal @r
+      f a = if a < d then a else f (a - d)
+      d = r - l
+      l = KR.rationalVal (Proxy @l)
+      r = KR.rationalVal (Proxy @r)
 
 instance Inhabited Rational ('Just '( 'False, l)) ('Just '( 'False, r))
   => Shove Rational ('Just '( 'False, l)) ('Just '( 'False, r)) where
-  shove = \_x -> error "TODO"
+  shove | d == 0    = error "shove: impossible uninhabited"
+        | otherwise = \x -> unsafe (r - f (abs (abs r - abs x)))
     where
-      _l = KR.rationalVal @l
-      _r = KR.rationalVal @r
+      f a = if a < d then a else f (a - d) -- TODO is this correct?
+      d = r - l
+      l = KR.rationalVal (Proxy @l)
+      r = KR.rationalVal (Proxy @r)
 
 instance Inhabited Rational ('Just '( 'False, l)) 'Nothing
   => Shove Rational ('Just '( 'False, l)) 'Nothing where
-  shove = \_x -> error "TODO"
-    where
-      _l = KR.rationalVal @l
+  shove = \x -> unsafe $ if x <= l then l + (l - x) else x
+    where l = KR.rationalVal (Proxy @l)
 
 instance Inhabited Rational 'Nothing ('Just '( 'True, r))
   => Shove Rational 'Nothing ('Just '( 'True, r)) where
-  shove = \_x -> error "TODO"
-    where
-      _r = KR.rationalVal @r
+  shove = \x -> unsafe $ if r < x then r - (x - r) else x
+    where r = KR.rationalVal (Proxy @r)
 
 instance Inhabited Rational 'Nothing ('Just '( 'False, r))
   => Shove Rational 'Nothing ('Just '( 'False, r)) where
-  shove = \_x -> error "TODO"
-    where
-      _r = KR.rationalVal @r
+  shove = \x -> unsafe $ if r <= x then r - (x - r) else x
+    where r = KR.rationalVal (Proxy @r)
 
 instance Shove Rational 'Nothing 'Nothing where
   shove = unsafe
