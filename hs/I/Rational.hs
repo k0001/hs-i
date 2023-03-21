@@ -637,8 +637,7 @@ instance Inhabited Rational ('Just '( 'True, l)) ('Just '( 'True, r))
 
 instance Inhabited Rational ('Just '( 'True, l)) ('Just '( 'False, r))
   => Shove Rational ('Just '( 'True, l)) ('Just '( 'False, r)) where
-  shove | d == 0    = error "shove: impossible uninhabited"
-        | otherwise = \x -> unsafe (l + f (abs (abs r - abs x)))
+  shove = \x -> unsafe (l + f (abs (abs r - abs x)))
     where
       f a = if a < d then a else f (a - d)
       d = r - l
@@ -652,8 +651,7 @@ instance Inhabited Rational ('Just '( 'True, l)) 'Nothing
 
 instance Inhabited Rational ('Just '( 'False, l)) ('Just '( 'True, r))
   => Shove Rational ('Just '( 'False, l)) ('Just '( 'True, r)) where
-  shove | d == 0    = error "shove: impossible uninhabited"
-        | otherwise = \x -> unsafe (r - f (abs (abs r - abs x)))
+  shove  = \x -> unsafe (r - f (abs (abs r - abs x)))
     where
       f a = if a < d then a else f (a - d)
       d = r - l
