@@ -77,8 +77,14 @@ test-suite test
   import: basic
   type: exitcode-stdio-1.0
   hs-source-dirs: test
-  main-is: Main.hs
-  ghc-options: -threaded -with-rtsopts=-N
+  main-is: I/Test/Main.hs
+  ghc-options: -threaded -with-rtsopts=-N -main-is I.Test.Main.main
+  other-modules:
+    I.Test.Int8
+    I.Test.Integer
+    I.Test.Natural
+    I.Test.Support
+    I.Test.Word8
   build-depends:
     i,
     constraints,
