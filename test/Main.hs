@@ -142,13 +142,13 @@ tt_Word8' = testGroup ("Interval [" <> show l <> ", " <> show r <> "]")
 
   , case L.cmpNat (Proxy @l) (Proxy @r) of
       LTI ->
-        [ testProperty "pred" $ property $ do
+        [ testProperty "pred'" $ property $ do
             x <- forAll $ genIWord8 @l @r
             case I.pred' x of
               Nothing -> x === l
               Just y -> do x /== l
                            I.unwrap y === I.unwrap x - 1
-        , testProperty "succ" $ property $ do
+        , testProperty "succ'" $ property $ do
             x <- forAll $ genIWord8 @l @r
             case I.succ' x of
               Nothing -> x === r
@@ -307,13 +307,13 @@ tt_Int8' = testGroup ("Interval [" <> show l <> ", " <> show r <> "]")
 
   , case KI.cmpInteger (Proxy @l) (Proxy @r) of
       LTI ->
-        [ testProperty "pred" $ property $ do
+        [ testProperty "pred'" $ property $ do
             x <- forAll $ genIInt8 @l @r
             case I.pred' x of
               Nothing -> x === l
               Just y -> do x /== l
                            I.unwrap y === I.unwrap x - 1
-        , testProperty "succ" $ property $ do
+        , testProperty "succ'" $ property $ do
             x <- forAll $ genIInt8 @l @r
             case I.succ' x of
               Nothing -> x === r
@@ -321,11 +321,11 @@ tt_Int8' = testGroup ("Interval [" <> show l <> ", " <> show r <> "]")
                            I.unwrap y === I.unwrap x + 1
         ]
       _ -> mzero
--- TODO
---  , case KI.cmpInteger (Proxy @l) (Proxy @(P 0)) of
---      EQI -> pure $ testCase "zero" $
---               0 @=? I.unwrap (I.zero @Int8 @l @r)
---      _ -> mzero
+
+  , case (leInteger @l @(P 0), leInteger @(P 0) @r) of
+      (Just Dict, Just Dict) -> pure $ testCase "zero" $ do
+        0 @=? I.unwrap (I.zero @Int8 @l @r)
+      _ -> mzero
 
   , case (leInteger @l @(P 1), leInteger @(P 1) @r) of
       (Just Dict, Just Dict) -> pure $ testCase "one" $ do
@@ -461,13 +461,13 @@ tt_Natural'lr = testGroup ("Interval [" <> show l <> ", " <> show r <> "]")
 
   , case L.cmpNat (Proxy @l) (Proxy @r) of
       LTI ->
-        [ testProperty "pred" $ property $ do
+        [ testProperty "pred'" $ property $ do
             x <- forAll $ genINatural @l @('Just r)
             case I.pred' x of
               Nothing -> x === l
               Just y -> do x /== l
                            I.unwrap y === I.unwrap x - 1
-        , testProperty "succ" $ property $ do
+        , testProperty "succ'" $ property $ do
             x <- forAll $ genINatural @l @('Just r)
             case I.succ' x of
               Nothing -> x === r
@@ -582,18 +582,22 @@ tt_Natural'l = testGroup ("Interval [" <> show l <> ", infinity)")
       x <- forAll $ genINatural @l @'Nothing
       x === I.with x I.known'
 
-  , pure $ testProperty "pred" $ property $ do
+  , pure $ testProperty "pred'" $ property $ do
       x <- forAll $ genINatural @l @'Nothing
       case I.pred' x of
         Nothing -> x === l
         Just y -> do x /== l
                      I.unwrap y === I.unwrap x - 1
 
-  , pure $ testProperty "succ" $ property $ do
+  , pure $ testProperty "succ'" $ property $ do
       x <- forAll $ genINatural @l @'Nothing
       case I.succ' x of
         Nothing -> failure
-        Just y -> do I.unwrap y === I.unwrap x + 1
+        Just y -> I.unwrap y === I.unwrap x + 1
+
+  , pure $ testProperty "succ" $ property $ do
+      x <- forAll $ genINatural @l @'Nothing
+      Just (I.succ x) === I.succ' x
 
   , case L.cmpNat (Proxy @l) (Proxy @0) of
       EQI -> pure $ testCase "zero" $
@@ -658,6 +662,8 @@ tt_Integer = testGroup "Integer"
   , tt_Integer'ur  @(P 0)
   , tt_Integer'ur  @(P 1)
   , tt_Integer'ur  @(P 100)
+
+  , tt_Integer'uu
   ]
 
 tt_Integer'lr
@@ -731,14 +737,14 @@ tt_Integer'lr = testGroup ("Interval [" <> show l <> ", " <> show r <> "]")
 
   , case KI.cmpInteger (Proxy @l) (Proxy @r) of
       LTI ->
-        [ testProperty "pred" $ property $ do
+        [ testProperty "pred'" $ property $ do
             x <- forAll $ genIInteger @('Just l) @('Just r)
             case I.pred' x of
               Nothing -> x === l
               Just y -> do x /== l
                            I.unwrap y === I.unwrap x - 1
 
-        , testProperty "succ" $ property $ do
+        , testProperty "succ'" $ property $ do
             x <- forAll $ genIInteger @('Just l) @('Just r)
             case I.succ' x of
               Nothing -> x === r
@@ -818,6 +824,13 @@ tt_Integer'lu = testGroup ("Interval [" <> show l <> ", infinity)")
         Nothing -> assert (x < l'')
         Just y -> toInteger (I.unwrap y) === x
 
+  , case leInteger @(P 0) @l of
+      Nothing -> mzero
+      Just Dict -> pure $ testProperty "plus" $ property $ do
+        a <- forAll $ genIInteger @('Just l) @'Nothing
+        b <- forAll $ genIInteger @('Just l) @'Nothing
+        Just (I.plus a b) === I.plus' a b
+
   , pure $ testProperty "mult'" $ property $ do
       a <- forAll $ genIInteger @('Just l) @'Nothing
       b <- forAll $ genIInteger @('Just l) @'Nothing
@@ -826,6 +839,12 @@ tt_Integer'lu = testGroup ("Interval [" <> show l <> ", infinity)")
         Nothing -> assert (x < l'')
         Just y -> toInteger (I.unwrap y) === x
 
+  , case leInteger @(P 0) @l of
+      Nothing -> mzero
+      Just Dict -> pure $ testProperty "mult" $ property $ do
+        a <- forAll $ genIInteger @('Just l) @'Nothing
+        b <- forAll $ genIInteger @('Just l) @'Nothing
+        Just (I.mult a b) === I.mult' a b
 
   , pure $ testProperty "minus'" $ property $ do
       a <- forAll $ genIInteger @('Just l) @'Nothing
@@ -856,22 +875,26 @@ tt_Integer'lu = testGroup ("Interval [" <> show l <> ", infinity)")
       x <- forAll $ genIInteger @('Just l) @'Nothing
       x === I.with x I.known'
 
-  , pure $ testProperty "pred" $ property $ do
+  , pure $ testProperty "pred'" $ property $ do
       x <- forAll $ genIInteger @('Just l) @'Nothing
       case I.pred' x of
         Nothing -> x === l
         Just y -> do x /== l
                      I.unwrap y === I.unwrap x - 1
 
-  , pure $ testProperty "succ" $ property $ do
+  , pure $ testProperty "succ'" $ property $ do
       x <- forAll $ genIInteger @('Just l) @'Nothing
       case I.succ' x of
         Nothing -> failure
         Just y -> do I.unwrap y === I.unwrap x + 1
 
-  , case KI.cmpInteger (Proxy @l) (Proxy @(P 0)) of
-      EQI -> pure $ testCase "zero" $
-               0 @=? I.unwrap (I.zero @Integer @('Just l) @'Nothing)
+  , pure $ testProperty "succ" $ property $ do
+      x <- forAll $ genIInteger @('Just l) @'Nothing
+      Just (I.succ x) === I.succ' x
+
+  , case leInteger @l @(P 0) of
+      Just Dict -> pure $ testCase "zero" $ do
+        0 @=? I.unwrap (I.zero @Integer @('Just l) @'Nothing)
       _ -> mzero
 
   , case leInteger @l @(P 1) of
@@ -928,6 +951,13 @@ tt_Integer'ur = testGroup ("Interval (-infinity, " <> show r <> "]")
         Nothing -> assert (x > r'')
         Just y -> toInteger (I.unwrap y) === x
 
+  , case leInteger @r @(P 0) of
+      Nothing -> mzero
+      Just Dict -> pure $ testProperty "plus" $ property $ do
+        a <- forAll $ genIInteger @'Nothing @('Just r)
+        b <- forAll $ genIInteger @'Nothing @('Just r)
+        Just (I.plus a b) === I.plus' a b
+
   , pure $ testProperty "mult'" $ property $ do
       a <- forAll $ genIInteger @'Nothing @('Just r)
       b <- forAll $ genIInteger @'Nothing @('Just r)
@@ -935,7 +965,6 @@ tt_Integer'ur = testGroup ("Interval (-infinity, " <> show r <> "]")
       case I.mult' a b of
         Nothing -> assert (x > r'')
         Just y -> toInteger (I.unwrap y) === x
-
 
   , pure $ testProperty "minus'" $ property $ do
       a <- forAll $ genIInteger @'Nothing @('Just r)
@@ -966,23 +995,26 @@ tt_Integer'ur = testGroup ("Interval (-infinity, " <> show r <> "]")
       x <- forAll $ genIInteger @'Nothing @('Just r)
       x === I.with x I.known'
 
-  , pure $ testProperty "pred" $ property $ do
+  , pure $ testProperty "pred'" $ property $ do
       x <- forAll $ genIInteger @'Nothing @('Just r)
       case I.pred' x of
         Nothing -> failure
-        Just y -> do x /== r
-                     I.unwrap y === I.unwrap x - 1
+        Just y -> I.unwrap y === I.unwrap x - 1
 
-  , pure $ testProperty "succ" $ property $ do
+  , pure $ testProperty "succ'" $ property $ do
       x <- forAll $ genIInteger @'Nothing @('Just r)
       case I.succ' x of
         Nothing -> x === r
         Just y -> do I.unwrap y === I.unwrap x + 1
 
--- TODO  , case KI.cmpInteger (Proxy @r) (Proxy @(P 0)) of
--- TODO      EQI -> pure $ testCase "zero" $
--- TODO               0 @=? I.unwrap (I.zero @Integer @'Nothing @('Just r))
--- TODO      _ -> mzero
+  , pure $ testProperty "pred" $ property $ do
+      x <- forAll $ genIInteger @'Nothing @('Just r)
+      Just (I.pred x) === I.pred' x
+
+  , case leInteger @(P 0) @r of
+      Just Dict -> pure $ testCase "zero" $ do
+        0 @=? I.unwrap (I.zero @Integer @'Nothing @('Just r))
+      _ -> mzero
 
   , case leInteger @(P 1) @r of
       Just Dict -> pure $ testCase "one" $ do
@@ -1008,6 +1040,120 @@ tt_Integer'ur = testGroup ("Interval (-infinity, " <> show r <> "]")
     r   = I.max        :: I Integer 'Nothing ('Just r)
     r'  = I.unwrap r   :: Integer
     r'' = toInteger r' :: Integer
+
+tt_Integer'uu :: TestTree
+tt_Integer'uu = testGroup "Interval (-infinity, +infinity)"
+  $ concat
+  [ pure $ testProperty "from" $ property $ do
+      x <- forAll genInteger
+      case I.from @Integer @'Nothing @'Nothing x of
+        Nothing -> failure
+        Just y -> I.unwrap y === x
+
+  , pure $ testProperty "shove" $ property $ do
+      x <- forAll genInteger
+      let y = I.shove @Integer @'Nothing @'Nothing x
+      I.from (I.unwrap y) === Just y
+      I.from @Integer @'Nothing @'Nothing x /== Nothing
+
+  , pure $ testProperty "plus'" $ property $ do
+      a <- forAll $ genIInteger @'Nothing @'Nothing
+      b <- forAll $ genIInteger @'Nothing @'Nothing
+      let x = toInteger (I.unwrap a) + toInteger (I.unwrap b)
+      case I.plus' a b of
+        Nothing -> failure
+        Just y -> toInteger (I.unwrap y) === x
+
+  , pure $ testProperty "plus" $ property $ do
+      a <- forAll $ genIInteger @'Nothing @'Nothing
+      b <- forAll $ genIInteger @'Nothing @'Nothing
+      Just (I.plus a b) === I.plus' a b
+
+  , pure $ testProperty "mult'" $ property $ do
+      a <- forAll $ genIInteger @'Nothing @'Nothing
+      b <- forAll $ genIInteger @'Nothing @'Nothing
+      let x = toInteger (I.unwrap a) * toInteger (I.unwrap b)
+      case I.mult' a b of
+        Nothing -> failure
+        Just y -> toInteger (I.unwrap y) === x
+
+  , pure $ testProperty "mult" $ property $ do
+      a <- forAll $ genIInteger @'Nothing @'Nothing
+      b <- forAll $ genIInteger @'Nothing @'Nothing
+      Just (I.mult a b) === I.mult' a b
+
+  , pure $ testProperty "minus'" $ property $ do
+      a <- forAll $ genIInteger @'Nothing @'Nothing
+      b <- forAll $ genIInteger @'Nothing @'Nothing
+      let x = toInteger (I.unwrap a) - toInteger (I.unwrap b)
+      case I.minus' a b of
+        Nothing -> failure
+        Just y -> toInteger (I.unwrap y) === x
+
+  , pure $ testProperty "minus" $ property $ do
+      a <- forAll $ genIInteger @'Nothing @'Nothing
+      b <- forAll $ genIInteger @'Nothing @'Nothing
+      Just (I.minus a b) === I.minus' a b
+
+  , pure $ testProperty "div'" $ property $ do
+      a <- forAll $ genIInteger @'Nothing @'Nothing
+      b <- forAll $ Gen.filter (\x -> I.unwrap x /= 0)
+                               (genIInteger @'Nothing @'Nothing)
+      let (q, m) = toInteger (I.unwrap a) `divMod` toInteger (I.unwrap b)
+      case I.div' a b of
+        Nothing -> assert (m /= 0)
+        Just y -> do q === toInteger (I.unwrap y)
+                     m === 0
+
+  , pure $ testProperty "clamp'" $ property $ do
+      x <- forAll $ genInteger
+      x === I.unwrap (I.clamp @Integer @'Nothing @'Nothing x)
+
+  , pure $ testProperty "with" $ property $ do
+      x <- forAll $ genIInteger @'Nothing @'Nothing
+      x === I.with x I.known'
+
+  , pure $ testProperty "pred'" $ property $ do
+      x <- forAll $ genIInteger @'Nothing @'Nothing
+      case I.pred' x of
+        Nothing -> failure
+        Just y -> I.unwrap y === I.unwrap x - 1
+
+  , pure $ testProperty "succ'" $ property $ do
+      x <- forAll $ genIInteger @'Nothing @'Nothing
+      case I.succ' x of
+        Nothing -> failure
+        Just y -> I.unwrap y === I.unwrap x + 1
+
+  , pure $ testProperty "pred" $ property $ do
+      x <- forAll $ genIInteger @'Nothing @'Nothing
+      Just (I.pred x) === I.pred' x
+
+  , pure $ testProperty "succ" $ property $ do
+      x <- forAll $ genIInteger @'Nothing @'Nothing
+      Just (I.succ x) === I.succ' x
+
+  , pure $ testCase "zero" $ do
+      0 @=? I.unwrap (I.zero @Integer @'Nothing @'Nothing)
+
+  , pure $ testCase "one" $ do
+      1 @=? I.unwrap (I.one @Integer @'Nothing @'Nothing)
+
+  , pure $ testProperty "down" $ property $ do
+      x <- forAll $ genIInteger @'Nothing @'Nothing
+      Just x === I.down x
+      case I.down x of
+        Nothing -> failure
+        Just y -> I.unwrap x
+              === I.unwrap (y :: I Integer (I.MinL Integer) (I.MaxR Integer))
+
+  , pure $ testProperty "up" $ property $ do
+      x <- forAll $ genIInteger @'Nothing @'Nothing
+      x === I.up x
+      I.unwrap x ===
+        I.unwrap (I.up x :: I Integer (I.MinL Integer) (I.MaxR Integer))
+
+  ]
 
 --------------------------------------------------------------------------------
 

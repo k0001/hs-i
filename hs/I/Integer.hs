@@ -272,7 +272,7 @@ instance (Inhabited P.Integer ('Just l) 'Nothing, K.P 0 <= l)
   a `mult` b = UnsafeI (unwrap a * unwrap b)
 
 instance Mult P.Integer 'Nothing 'Nothing where
-  a `mult` b = UnsafeI (unwrap a + unwrap b)
+  a `mult` b = UnsafeI (unwrap a * unwrap b)
 
 --------------------------------------------------------------------------------
 
