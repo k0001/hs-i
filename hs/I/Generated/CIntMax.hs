@@ -45,24 +45,17 @@ instance forall (l :: K.Integer) (r :: K.Integer).
     , r <= MaxT CIntMax )
   type MinI CIntMax l r = l
   type MaxI CIntMax l r = r
-
-instance
-  ( Interval CIntMax l r, InhabitedCtx CIntMax l r
-  ) => Inhabited CIntMax l r where
   inhabitant = min
-  from = \x -> UnsafeI x <$ guard (l <= x && x <= r)
+  from = \x -> unsafest x <$ guard (l <= x && x <= r)
     where l = fromInteger (K.integerVal (Proxy @l)) :: CIntMax
           r = fromInteger (K.integerVal (Proxy @r)) :: CIntMax
-
   negate' (unwrap -> x) = do
     guard (x /= minBound)
     from (P.negate x)
-
   (unwrap -> a) `plus'` (unwrap -> b)
     | b > 0 && a > maxBound - b = Nothing
     | b < 0 && a < minBound - b = Nothing
     | otherwise                 = from (a + b)
-
   (unwrap -> a) `mult'` (unwrap -> b) = do
     guard $ case a <= 0 of
       True  | b <= 0    -> a == 0 || b >= (maxBound `quot` a)
@@ -70,30 +63,28 @@ instance
       False | b <= 0    -> b >= (minBound `quot` a)
             | otherwise -> a <= (maxBound `quot` b)
     from (a * b)
-
   (unwrap -> a) `minus'` (unwrap -> b)
     | b > 0 && a < minBound + b = Nothing
     | b < 0 && a > maxBound + b = Nothing
     | otherwise                 = from (a - b)
-
   (unwrap -> a) `div'` (unwrap -> b) = do
     guard (b /= 0 && (b /= -1 || a /= minBound))
     let (q, m) = divMod a b
     guard (m == 0)
     from q
 
-instance (Inhabited CIntMax l r) => Clamp CIntMax l r
+instance (Interval CIntMax l r) => Clamp CIntMax l r
 
-instance (Inhabited CIntMax ld rd, Inhabited CIntMax lu ru, lu <= ld, rd <= ru)
+instance (Interval CIntMax ld rd, Interval CIntMax lu ru, lu <= ld, rd <= ru)
   => Up CIntMax ld rd lu ru
 
 instance forall l r t.
-  ( Inhabited CIntMax l r, KnownCtx CIntMax l r t
+  ( Interval CIntMax l r, KnownCtx CIntMax l r t
   ) => Known CIntMax l r t where
   type KnownCtx CIntMax l r t = (K.KnownInteger t, l <= t, t <= r)
-  known' = UnsafeI . fromInteger . K.integerVal
+  known' = unsafe . fromInteger . K.integerVal
 
-instance forall l r. (Inhabited CIntMax l r) => With CIntMax l r where
+instance forall l r. (Interval CIntMax l r) => With CIntMax l r where
   with x g = case K.someIntegerVal (toInteger (unwrap x)) of
     K.SomeInteger (pt :: Proxy t) ->
       fromMaybe (error "I.with: impossible") $ do
@@ -101,20 +92,20 @@ instance forall l r. (Inhabited CIntMax l r) => With CIntMax l r where
         Dict <- leInteger @t @r
         pure (g pt)
 
-instance (Inhabited CIntMax l r, l /= r) => Discrete CIntMax l r where
-  pred' i = UnsafeI (unwrap i - 1) <$ guard (min < i)
-  succ' i = UnsafeI (unwrap i + 1) <$ guard (i < max)
+instance (Interval CIntMax l r, l /= r) => Discrete CIntMax l r where
+  pred' i = unsafe (unwrap i - 1) <$ guard (min < i)
+  succ' i = unsafe (unwrap i + 1) <$ guard (i < max)
 
 instance (Zero CIntMax l r, l == K.Negate r) => Negate CIntMax l r where
-  negate = UnsafeI . P.negate . unwrap
+  negate = unsafe . P.negate . unwrap
 
-instance (Inhabited CIntMax l r, l <= K.P 0, K.P 0 <= r) => Zero CIntMax l r where
-  zero = UnsafeI 0
+instance (Interval CIntMax l r, l <= K.P 0, K.P 0 <= r) => Zero CIntMax l r where
+  zero = unsafe 0
 
-instance (Inhabited CIntMax l r, l <= K.P 1, K.P 1 <= r) => One CIntMax l r where
-  one = UnsafeI 1
+instance (Interval CIntMax l r, l <= K.P 1, K.P 1 <= r) => One CIntMax l r where
+  one = unsafe 1
 
-instance forall l r. (Inhabited CIntMax l r) => Shove CIntMax l r where
+instance forall l r. (Interval CIntMax l r) => Shove CIntMax l r where
   shove = \x -> fromMaybe (error "shove(CIntMax): impossible") $
                   from $ fromInteger (mod (toInteger x) (r - l + 1) + l)
     where l = toInteger (unwrap (min @CIntMax @l @r))

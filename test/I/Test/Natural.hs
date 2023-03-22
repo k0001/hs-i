@@ -43,7 +43,7 @@ tt = testGroup "Natural"
 
 tt'lr
   :: forall (l :: I.L Natural) (r :: Natural)
-  .  I.Inhabited Natural l ('Just r)
+  .  I.Interval Natural l ('Just r)
   => TestTree
 tt'lr = testGroup ("Interval [" <> show l <> ", " <> show r <> "]")
   $ concat
@@ -167,7 +167,7 @@ tt'lr = testGroup ("Interval [" <> show l <> ", " <> show r <> "]")
 
 tt'l
   :: forall (l :: I.L Natural)
-  .  I.Inhabited Natural l 'Nothing
+  .  I.Interval Natural l 'Nothing
   => TestTree
 tt'l = testGroup ("Interval [" <> show l <> ", infinity)")
   $ concat

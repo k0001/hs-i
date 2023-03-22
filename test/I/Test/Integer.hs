@@ -58,7 +58,7 @@ tt = testGroup "Integer"
 
 tt'lr
   :: forall (l :: KI.Integer) (r :: KI.Integer)
-  .  I.Inhabited Integer ('Just l) ('Just r)
+  .  I.Interval Integer ('Just l) ('Just r)
   => TestTree
 tt'lr = testGroup ("Interval [" <> show l <> ", " <> show r <> "]")
   $ concat
@@ -187,7 +187,7 @@ tt'lr = testGroup ("Interval [" <> show l <> ", " <> show r <> "]")
 
 tt'lu
   :: forall (l :: KI.Integer)
-  .  I.Inhabited Integer ('Just l) 'Nothing
+  .  I.Interval Integer ('Just l) 'Nothing
   => TestTree
 tt'lu = testGroup ("Interval [" <> show l <> ", infinity)")
   $ concat
@@ -314,7 +314,7 @@ tt'lu = testGroup ("Interval [" <> show l <> ", infinity)")
 
 tt'ur
   :: forall (r :: KI.Integer)
-  .  I.Inhabited Integer 'Nothing ('Just r)
+  .  I.Interval Integer 'Nothing ('Just r)
   => TestTree
 tt'ur = testGroup ("Interval (-infinity, " <> show r <> "]")
   $ concat

@@ -45,63 +45,55 @@ instance forall l r.
     , r <= MaxT CUIntPtr )
   type MinI CUIntPtr l r = l
   type MaxI CUIntPtr l r = r
-
-instance
-  ( Interval CUIntPtr l r, InhabitedCtx CUIntPtr l r
-  ) => Inhabited CUIntPtr l r where
   inhabitant = min
-  from = \x -> UnsafeI x <$ guard (l <= x && x <= r)
+  from = \x -> unsafest x <$ guard (l <= x && x <= r)
     where l = fromInteger (L.natVal (Proxy @l)) :: CUIntPtr
           r = fromInteger (L.natVal (Proxy @r)) :: CUIntPtr
-
   (unwrap -> a) `plus'` (unwrap -> b) = do
     guard (b <= maxBound - a)
     from (a + b)
-
   (unwrap -> a) `mult'` (unwrap -> b) = do
     guard (b == 0 || a <= maxBound `quot` b)
     from (a * b)
-
   (unwrap -> a) `minus'` (unwrap -> b) = do
     guard (b <= a)
     from (a - b)
-
   (unwrap -> a) `div'` (unwrap -> b) = do
     guard (b /= 0)
     let (q, m) = divMod a b
     guard (m == 0)
     from q
 
-instance (Inhabited CUIntPtr l r) => Clamp CUIntPtr l r
+instance (Interval CUIntPtr l r) => Clamp CUIntPtr l r
 
-instance (Inhabited CUIntPtr ld rd, Inhabited CUIntPtr lu ru, lu <= ld, rd <= ru)
+instance (Interval CUIntPtr ld rd, Interval CUIntPtr lu ru, lu <= ld, rd <= ru)
   => Up CUIntPtr ld rd lu ru
 
 instance forall l r t.
-  ( Inhabited CUIntPtr l r, KnownCtx CUIntPtr l r t
+  ( Interval CUIntPtr l r, KnownCtx CUIntPtr l r t
   ) => Known CUIntPtr l r t where
   type KnownCtx CUIntPtr l r t = (L.KnownNat t, l <= t, t <= r)
-  known' = UnsafeI . fromInteger . L.natVal
+  known' = unsafe . fromInteger . L.natVal
 
-instance forall l r. (Inhabited CUIntPtr l r) => With CUIntPtr l r where
+instance forall l r. (Interval CUIntPtr l r) => With CUIntPtr l r where
   with x g = fromMaybe (error "I.with: impossible") $ do
     L.SomeNat (pt :: Proxy t) <- L.someNatVal (toInteger (unwrap x))
     Dict <- leNatural @l @t
     Dict <- leNatural @t @r
     pure (g pt)
 
-instance (Inhabited CUIntPtr l r, l /= r) => Discrete CUIntPtr l r where
-  pred' i = UnsafeI (unwrap i - 1) <$ guard (min < i)
-  succ' i = UnsafeI (unwrap i + 1) <$ guard (i < max)
+instance (Interval CUIntPtr l r, l /= r) => Discrete CUIntPtr l r where
+  pred' i = unsafe (unwrap i - 1) <$ guard (min < i)
+  succ' i = unsafe (unwrap i + 1) <$ guard (i < max)
 
-instance (Inhabited CUIntPtr 0 r) => Zero CUIntPtr 0 r where
-  zero = UnsafeI 0
+instance (Interval CUIntPtr 0 r) => Zero CUIntPtr 0 r where
+  zero = unsafe 0
 
-instance (Inhabited CUIntPtr l r, l <= 1, 1 <= r) => One CUIntPtr l r where
-  one = UnsafeI 1
+instance (Interval CUIntPtr l r, l <= 1, 1 <= r) => One CUIntPtr l r where
+  one = unsafe 1
 
-instance forall l r. (Inhabited CUIntPtr l r) => Shove CUIntPtr l r where
-  shove = \x -> UnsafeI $ fromInteger (mod (toInteger x) (r - l + 1) + l)
+instance forall l r. (Interval CUIntPtr l r) => Shove CUIntPtr l r where
+  shove = \x -> unsafe $ fromInteger (mod (toInteger x) (r - l + 1) + l)
     where l = toInteger (unwrap (min @CUIntPtr @l @r))
           r = toInteger (unwrap (max @CUIntPtr @l @r))
 

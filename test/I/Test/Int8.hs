@@ -64,7 +64,7 @@ tt = testGroup "Int8"
 
 tt'
   :: forall (l :: I.L Int8) (r :: I.R Int8)
-  .  I.Inhabited Int8 l r
+  .  I.Interval Int8 l r
   => TestTree
 tt' = testGroup ("Interval [" <> show l <> ", " <> show r <> "]")
   $ concat

@@ -45,63 +45,55 @@ instance forall l r.
     , r <= MaxT CULLong )
   type MinI CULLong l r = l
   type MaxI CULLong l r = r
-
-instance
-  ( Interval CULLong l r, InhabitedCtx CULLong l r
-  ) => Inhabited CULLong l r where
   inhabitant = min
-  from = \x -> UnsafeI x <$ guard (l <= x && x <= r)
+  from = \x -> unsafest x <$ guard (l <= x && x <= r)
     where l = fromInteger (L.natVal (Proxy @l)) :: CULLong
           r = fromInteger (L.natVal (Proxy @r)) :: CULLong
-
   (unwrap -> a) `plus'` (unwrap -> b) = do
     guard (b <= maxBound - a)
     from (a + b)
-
   (unwrap -> a) `mult'` (unwrap -> b) = do
     guard (b == 0 || a <= maxBound `quot` b)
     from (a * b)
-
   (unwrap -> a) `minus'` (unwrap -> b) = do
     guard (b <= a)
     from (a - b)
-
   (unwrap -> a) `div'` (unwrap -> b) = do
     guard (b /= 0)
     let (q, m) = divMod a b
     guard (m == 0)
     from q
 
-instance (Inhabited CULLong l r) => Clamp CULLong l r
+instance (Interval CULLong l r) => Clamp CULLong l r
 
-instance (Inhabited CULLong ld rd, Inhabited CULLong lu ru, lu <= ld, rd <= ru)
+instance (Interval CULLong ld rd, Interval CULLong lu ru, lu <= ld, rd <= ru)
   => Up CULLong ld rd lu ru
 
 instance forall l r t.
-  ( Inhabited CULLong l r, KnownCtx CULLong l r t
+  ( Interval CULLong l r, KnownCtx CULLong l r t
   ) => Known CULLong l r t where
   type KnownCtx CULLong l r t = (L.KnownNat t, l <= t, t <= r)
-  known' = UnsafeI . fromInteger . L.natVal
+  known' = unsafe . fromInteger . L.natVal
 
-instance forall l r. (Inhabited CULLong l r) => With CULLong l r where
+instance forall l r. (Interval CULLong l r) => With CULLong l r where
   with x g = fromMaybe (error "I.with: impossible") $ do
     L.SomeNat (pt :: Proxy t) <- L.someNatVal (toInteger (unwrap x))
     Dict <- leNatural @l @t
     Dict <- leNatural @t @r
     pure (g pt)
 
-instance (Inhabited CULLong l r, l /= r) => Discrete CULLong l r where
-  pred' i = UnsafeI (unwrap i - 1) <$ guard (min < i)
-  succ' i = UnsafeI (unwrap i + 1) <$ guard (i < max)
+instance (Interval CULLong l r, l /= r) => Discrete CULLong l r where
+  pred' i = unsafe (unwrap i - 1) <$ guard (min < i)
+  succ' i = unsafe (unwrap i + 1) <$ guard (i < max)
 
-instance (Inhabited CULLong 0 r) => Zero CULLong 0 r where
-  zero = UnsafeI 0
+instance (Interval CULLong 0 r) => Zero CULLong 0 r where
+  zero = unsafe 0
 
-instance (Inhabited CULLong l r, l <= 1, 1 <= r) => One CULLong l r where
-  one = UnsafeI 1
+instance (Interval CULLong l r, l <= 1, 1 <= r) => One CULLong l r where
+  one = unsafe 1
 
-instance forall l r. (Inhabited CULLong l r) => Shove CULLong l r where
-  shove = \x -> UnsafeI $ fromInteger (mod (toInteger x) (r - l + 1) + l)
+instance forall l r. (Interval CULLong l r) => Shove CULLong l r where
+  shove = \x -> unsafe $ fromInteger (mod (toInteger x) (r - l + 1) + l)
     where l = toInteger (unwrap (min @CULLong @l @r))
           r = toInteger (unwrap (max @CULLong @l @r))
 

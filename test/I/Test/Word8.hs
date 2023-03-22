@@ -44,7 +44,7 @@ tt = testGroup "Word8"
 
 tt'
   :: forall (l :: I.L Word8) (r :: I.R Word8)
-  .  I.Inhabited Word8 l r
+  .  I.Interval Word8 l r
   => TestTree
 tt' = testGroup ("Interval [" <> show l <> ", " <> show r <> "]")
   $ concat

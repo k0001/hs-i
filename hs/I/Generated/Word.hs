@@ -45,63 +45,55 @@ instance forall l r.
     , r <= MaxT Word )
   type MinI Word l r = l
   type MaxI Word l r = r
-
-instance
-  ( Interval Word l r, InhabitedCtx Word l r
-  ) => Inhabited Word l r where
   inhabitant = min
-  from = \x -> UnsafeI x <$ guard (l <= x && x <= r)
+  from = \x -> unsafest x <$ guard (l <= x && x <= r)
     where l = fromInteger (L.natVal (Proxy @l)) :: Word
           r = fromInteger (L.natVal (Proxy @r)) :: Word
-
   (unwrap -> a) `plus'` (unwrap -> b) = do
     guard (b <= maxBound - a)
     from (a + b)
-
   (unwrap -> a) `mult'` (unwrap -> b) = do
     guard (b == 0 || a <= maxBound `quot` b)
     from (a * b)
-
   (unwrap -> a) `minus'` (unwrap -> b) = do
     guard (b <= a)
     from (a - b)
-
   (unwrap -> a) `div'` (unwrap -> b) = do
     guard (b /= 0)
     let (q, m) = divMod a b
     guard (m == 0)
     from q
 
-instance (Inhabited Word l r) => Clamp Word l r
+instance (Interval Word l r) => Clamp Word l r
 
-instance (Inhabited Word ld rd, Inhabited Word lu ru, lu <= ld, rd <= ru)
+instance (Interval Word ld rd, Interval Word lu ru, lu <= ld, rd <= ru)
   => Up Word ld rd lu ru
 
 instance forall l r t.
-  ( Inhabited Word l r, KnownCtx Word l r t
+  ( Interval Word l r, KnownCtx Word l r t
   ) => Known Word l r t where
   type KnownCtx Word l r t = (L.KnownNat t, l <= t, t <= r)
-  known' = UnsafeI . fromInteger . L.natVal
+  known' = unsafe . fromInteger . L.natVal
 
-instance forall l r. (Inhabited Word l r) => With Word l r where
+instance forall l r. (Interval Word l r) => With Word l r where
   with x g = fromMaybe (error "I.with: impossible") $ do
     L.SomeNat (pt :: Proxy t) <- L.someNatVal (toInteger (unwrap x))
     Dict <- leNatural @l @t
     Dict <- leNatural @t @r
     pure (g pt)
 
-instance (Inhabited Word l r, l /= r) => Discrete Word l r where
-  pred' i = UnsafeI (unwrap i - 1) <$ guard (min < i)
-  succ' i = UnsafeI (unwrap i + 1) <$ guard (i < max)
+instance (Interval Word l r, l /= r) => Discrete Word l r where
+  pred' i = unsafe (unwrap i - 1) <$ guard (min < i)
+  succ' i = unsafe (unwrap i + 1) <$ guard (i < max)
 
-instance (Inhabited Word 0 r) => Zero Word 0 r where
-  zero = UnsafeI 0
+instance (Interval Word 0 r) => Zero Word 0 r where
+  zero = unsafe 0
 
-instance (Inhabited Word l r, l <= 1, 1 <= r) => One Word l r where
-  one = UnsafeI 1
+instance (Interval Word l r, l <= 1, 1 <= r) => One Word l r where
+  one = unsafe 1
 
-instance forall l r. (Inhabited Word l r) => Shove Word l r where
-  shove = \x -> UnsafeI $ fromInteger (mod (toInteger x) (r - l + 1) + l)
+instance forall l r. (Interval Word l r) => Shove Word l r where
+  shove = \x -> unsafe $ fromInteger (mod (toInteger x) (r - l + 1) + l)
     where l = toInteger (unwrap (min @Word @l @r))
           r = toInteger (unwrap (max @Word @l @r))
 

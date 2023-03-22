@@ -60,40 +60,42 @@ type family T (x :: Type) :: k
 
 -- | Type-level verison of @__'minBound'__ :: x@. If @x@ is unbounded on the
 -- left end, then it's ok to leave @'MinT' x@ undefined.
--- If defined, it should mean the same 'MinL' does.
+-- If defined, it should match what 'MinL' means.
 type family MinT (x :: Type) :: T x
 
 -- | Type-level verison of @__'maxBound'__ :: x@. If @x@ is unbounded on the
 -- right end, then it's ok to leave @'MaxT' x@ undefined.
--- If defined, it should mean the same 'MaxR' does.
+-- If defined, it should match what 'MaxR' means.
 type family MaxT (x :: Type) :: T x
 
 -- | The kind of @__l__@ in @'I' x l r@.
 type family L (x :: Type) :: k
 
--- | __Min__imu __l__eft bound for @x@. All the values of type @x@ are at
--- least as @'MinL' x@ states, as required by 'wrap'.
+-- | __Min__imum __l__eft bound for @x@. All the values of type @x@ are at
+-- least as @'MinL' x@ says, as required by 'wrap'.
 type family MinL (x :: Type) :: L x
 
 -- | The kind of @__r__@ in @'I' x l r@.
 type family R (x :: Type) :: k
 
 -- | __Max__imum __r__ight bound for @x@.  All the values of type @x@ are at
--- most as @'MaxR' x@ states, as required by 'wrap'.
+-- most as @'MaxR' x@ says, as required by 'wrap'.
 type family MaxR (x :: Type) :: R x
 
 
 -- | For @'I' x l r@ to be a valid interval type, @'Interval' x l r@ needs
--- to be satisfied.
+-- to be satisfied. All @'Interval's are non-empty.
 --
 -- __NB__: When defining 'Interval' instances, instead of mentioning any
 -- necessary constraints in the instance context, mention them them in
 -- 'IntervalCtx'. By doing so, when an instance of @'Interval' x l r@ is
 -- satisfied, @'IntervalCtx' x l r@ is satisfied as well.
 class IntervalCtx x l r => Interval (x :: Type) (l :: L x) (r :: R x) where
-  -- | Constraints to be satisfied for @'I' x l r@ to be a valid interval type.
+  -- | Constraints to be satisfied for @'I' x l r@ to be a valid non-empty
+  -- interval type.
   type IntervalCtx x l r :: Constraint
   type IntervalCtx x l r = ()
+
   -- | Minimum value of type @x@ contained in the interval @'I' x l r@, if any.
   -- If @'I' x l r@ is unbounded on the left end, then it's ok to leave
   -- @'MinI' x l r@ undefined. If defined, it should mean the same as @l@.
@@ -101,6 +103,7 @@ class IntervalCtx x l r => Interval (x :: Type) (l :: L x) (r :: R x) where
   type MinI x l r = L.TypeError
     ('L.Text "MinI not defined in instance ‘" 'L.:<>:
      'L.ShowType (Interval x l r) 'L.:<>: 'L.Text "’")
+
   -- | Maximum value of type @x@ contained in the interval @'I' x l r@, if any.
   -- If @'I' x l r@ is unbounded on the right end, then it's ok to leave
   -- @'MaxI' x l r@ undefined. If defined, it should mean the same as @r@.
@@ -109,22 +112,12 @@ class IntervalCtx x l r => Interval (x :: Type) (l :: L x) (r :: R x) where
     ('L.Text "MaxI not defined in instance ‘" 'L.:<>:
      'L.ShowType (Interval x l r) 'L.:<>: 'L.Text "’")
 
--- | 'Interval's that are not empty implement an 'Inhabited' instance.
---
--- __NB__: When defining 'Inhabited' instances, instead of mentioning any
--- necessary constraints in the instance context, mention them them in
--- 'InhabitedCtx'. By doing so, when an instance of @'Inhabited' x l r@ is
--- satisfied, @'InhabitedCtx' x l r@ is satisfied as well.
-class (Interval x l r, InhabitedCtx x l r)
-  => Inhabited (x :: Type) (l :: L x) (r :: R x) where
-  -- | Constraints to be satisfied for @'I' x l r@ to be a inhabited.
-  type InhabitedCtx x l r :: Constraint
-  type InhabitedCtx x l r = ()
   -- | Proof that there is at least one element in the @'I' x l r@ interval.
   --
   -- No guarantees are made about the value of 'inhabitant' other than the
   -- fact that it is known to inhabit the interval.
   inhabitant :: I x l r
+
   -- | Wrap the @x@ value in the interval @'I' x l r@, if it fits.
   --
   -- * Consider using 'wrap' if the interval includes all values of type @x@.
@@ -140,32 +133,38 @@ class (Interval x l r, InhabitedCtx x l r)
   --     'fmap' 'unwrap' ('from' x)  ==  'Just' x
   -- @
   from :: x -> Maybe (I x l r)
+
   -- | @a '`plus'`' b@ adds @a@ and @b@.
   --
   -- 'Nothing' if the result would be out of the interval. See 'wrap', too.
   plus' :: I x l r -> I x l r -> Maybe (I x l r)
   plus' _ _ = Nothing
+
   -- | @a '`mult'`' b@ multiplies @a@ times @b@.
   --
   -- 'Nothing' if the result would be out of the interval. See 'plus', too.
   mult' :: I x l r -> I x l r -> Maybe (I x l r)
   mult' _ _ = Nothing
+
   -- | @a '`minus'`' b@ substracts @b@ from @a@.
   --
   -- 'Nothing' if the result would be out of the interval. See 'mult', too.
   minus' :: I x l r -> I x l r -> Maybe (I x l r)
   minus' a b = plus' a =<< negate' b
   {-# INLINE minus' #-}
+
   -- | @'negate'' a@ is the additive inverse of @a@.
   --
   -- 'Nothing' if the result would be out of the interval.  See 'negate', too.
   negate' :: I x l r -> Maybe (I x l r)
   negate' _ = Nothing
+
   -- | @'recip'' a@ is the multiplicative inverse of @a@.
   --
   -- 'Nothing' if the result would be out of the interval.
   recip' :: I x l r -> Maybe (I x l r)
   recip' _ = Nothing
+
   -- | @a '`div'`' b@ divides @a@ by @b@.
   --
   -- 'Nothing' if the result would be out of the interval. See 'div' too.
@@ -179,7 +178,7 @@ class (Interval x l r, InhabitedCtx x l r)
 -- __WARNING__: This function calls 'from', which means that you can't use
 -- it to implement 'from'. You will have to use 'unsafest' in that case.
 -- Your code will loop indefinitely otherwise.
-unsafe :: forall x l r. (HasCallStack, Inhabited x l r) => x -> I x l r
+unsafe :: forall x l r. (HasCallStack, Interval x l r) => x -> I x l r
 unsafe = fromMaybe (error "I.unsafe: input outside interval") . from
 {-# INLINE unsafe #-}
 
@@ -195,7 +194,7 @@ unsafest :: forall x l r. x -> I x l r
 unsafest = coerce
 {-# INLINE unsafest #-}
 
-class (Inhabited x l r) => Clamp (x :: Type) (l :: L x) (r :: R x) where
+class (Interval x l r) => Clamp (x :: Type) (l :: L x) (r :: R x) where
   -- | Wrap @x@ in @'I' x l r@, making sure that @x@ is within the interval
   -- ends by clamping it to @'MinI' x l r@ if less than @l@, or to
   -- @'MaxI' x l r@ if more than @r@, if necessary.
@@ -216,17 +215,17 @@ class (Inhabited x l r) => Clamp (x :: Type) (l :: L x) (r :: R x) where
 -- | Downcast @'I' x lu ru@ into @'I' x ld rd@ if wrapped @x@ value fits
 -- in @'I' x ld rd@.
 down :: forall x lu ru ld rd
-     .  (Inhabited x ld rd)
+     .  (Interval x ld rd)
       => I x lu ru
       -> Maybe (I x ld rd)
 down = from . unwrap
 {-# INLINE down #-}
 
-class (Inhabited x ld rd, Inhabited x lu ru)
+class (Interval x ld rd, Interval x lu ru)
   => Up (x :: Type) (ld :: L x) (rd :: R x) (lu :: L x) (ru :: R x)
 
 -- -- | Identity.
--- instance {-# INCOHERENT #-} (Inhabited x l r, Inhabited x l r)
+-- instance {-# INCOHERENT #-} (Interval x l r, Interval x l r)
 --   => Up x l r l r
 
 -- | Upcast @'I' x ld rd@ into @'I' x lu ru@.
@@ -235,7 +234,7 @@ up = unsafe . unwrap
 {-# INLINE up #-}
 
 -- | Intervals that contain /discrete/ elements.
-class (Inhabited x l r) => Discrete (x :: Type) (l :: L x) (r :: R x) where
+class (Interval x l r) => Discrete (x :: Type) (l :: L x) (r :: R x) where
   -- | __Pred__ecessor. That is, the previous /discrete/ value in the interval.
   --
   -- 'Nothing' if the result would be out of the interval. See 'pred' too.
@@ -246,22 +245,22 @@ class (Inhabited x l r) => Discrete (x :: Type) (l :: L x) (r :: R x) where
   succ' :: I x l r -> Maybe (I x l r)
 
 -- | Intervals supporting /zero/.
-class (Inhabited x l r) => Zero (x :: Type) (l :: L x) (r :: R x) where
+class (Interval x l r) => Zero (x :: Type) (l :: L x) (r :: R x) where
   -- | Zero.
   zero :: I x l r
 
 -- | Intervals supporting /one/.
-class (Inhabited x l r) => One (x :: Type) (l :: L x) (r :: R x) where
+class (Interval x l r) => One (x :: Type) (l :: L x) (r :: R x) where
   -- | One.
   one :: I x l r
 
 -- | Intervals /fully/ supporting /addition/.
-class (Inhabited x l r) => Plus (x :: Type) (l :: L x) (r :: R x) where
+class (Interval x l r) => Plus (x :: Type) (l :: L x) (r :: R x) where
   -- | @a '`plus`' b@ adds @a@ and @b@.
   plus :: I x l r -> I x l r -> I x l r
 
 -- | Intervals /fully/ supporting /multiplication/.
-class (Inhabited x l r) => Mult (x :: Type) (l :: L x) (r :: R x) where
+class (Interval x l r) => Mult (x :: Type) (l :: L x) (r :: R x) where
   -- | @a '`plus`' b@ multiplies @a@ times @b@.
   mult :: I x l r -> I x l r -> I x l r
 
@@ -292,7 +291,7 @@ class (Discrete x l r) => Succ (x :: Type) (l :: L x) (r :: R x) where
   succ :: I x l r -> I x l r
 
 -- | Intervals /fully/ supporting /division/.
-class (Inhabited x l r) => Div (x :: Type) (l :: L x) (r :: R x) where
+class (Interval x l r) => Div (x :: Type) (l :: L x) (r :: R x) where
   -- | @a '`div`' b@ divides @a@ by @b@.
   div :: I x l r -> I x l r -> I x l r
 
@@ -313,7 +312,7 @@ single = inhabitant
 -- 'KnownCtx'. By doing so, when an instance of @'Known' x l r@ is
 -- satisfied, @'KnownCtx' x l r@ is satisfied as well.
 class
-  ( Inhabited x l r, KnownCtx x l r t
+  ( Interval x l r, KnownCtx x l r t
   ) => Known (x :: Type) (l :: L x) (r :: R x) (t :: T x) where
   -- | Constraints to be satisfied by @t@ if it is known to be within
   -- the @'I' x l r@ interval.
@@ -351,9 +350,9 @@ known = known' (Proxy @t)
 -- | Proof that @'I' x l r@ contains a value of type @x@ whose
 -- type-level representation @t :: 'T' x@ satisfies a @'Known' x l r t@.
 
--- TODO: The 'with' method belongs in the 'Inhabited' class, but I can't
+-- TODO: The 'with' method belongs in the 'Interval' class, but I can't
 -- get it to type-check, so it's here in this separate 'With' class.
-class (Inhabited x l r) => With (x :: Type) (l :: L x) (r :: R x) where
+class (Interval x l r) => With (x :: Type) (l :: L x) (r :: R x) where
   -- | Bring to scope the type-level representation of @x@ as @t :: 'T' x@,
   -- together with the constraints that prove that @t@ is 'Known' to be in the
   -- interval @'I' x l r@.
@@ -381,7 +380,7 @@ class (Inhabited x l r) => With (x :: Type) (l :: L x) (r :: R x) where
 --     'wrap' . 'unwrap' == 'id'
 --     'unwrap' . 'wrap' == 'id'
 --     @
-wrap :: Inhabited x (MinL x) (MaxR x) => x -> I x (MinL x) (MaxR x)
+wrap :: Interval x (MinL x) (MaxR x) => x -> I x (MinL x) (MaxR x)
 wrap = coerce
 {-# INLINE wrap #-}
 
@@ -394,7 +393,7 @@ wrap = coerce
 --     'unwrap' . 'wrap' == 'id'
 --     @
 --
--- It is implied that the interval is 'Inhabited', but there's no need
+-- It is implied that the interval is 'Interval', but there's no need
 -- to mention the constraint here since otherwise it wouldn't have been
 -- possible to obtain the input @'I' x l r@.
 unwrap :: forall x l r. I x l r -> x
@@ -425,12 +424,13 @@ instance
 -- Note: This class is for testing purposes only. For example, if you want to
 -- generate random values of type @'I' x l r@ for testing purposes, all you
 -- have to do is generate random values of type @x@ and then 'shove' them into
--- @'I' x l r@.
-class Inhabited x l r => Shove (x :: Type) (l :: L x) (r :: R x) where
+-- @'I' x l r@. If there was a good way to export generators for Hedgehog or
+-- QuickCheck without depending on them, we'd probably export that instead.
+class Interval x l r => Shove (x :: Type) (l :: L x) (r :: R x) where
   -- | No guarantees are made about the @x@ value that ends up in @'I' x l r@.
   -- In particular, you can't expect @'id' == 'unwrap' . 'shove'@, not even
   -- for @x@ values for which @'from' == 'Just'@. All 'shove' guarantees is
-  -- a distribution as uniform as possible.
+  -- a distribution more or less uniform.
   shove :: x -> I x l r
 
 --------------------------------------------------------------------------------

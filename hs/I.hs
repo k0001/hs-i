@@ -8,22 +8,16 @@
 -- import "I" qualified
 -- @
 module I
- ( -- * Intervals
+ ( -- * I
    I
- , Interval(..)
-   -- ** Type-level
  , T
  , MinT
  , MaxT
-   -- ** Left end
  , L
  , MinL
-   -- ** Right end
  , R
  , MaxR
-
-   -- * Inhabited
- , Inhabited(..)
+ , Interval(..)
  , unwrap
  , wrap
  , unsafe

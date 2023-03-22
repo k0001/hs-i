@@ -101,7 +101,7 @@ tt = testGroup "Rational"
 
 tt'cc
   :: forall (l :: KR.Rational) (r :: KR.Rational)
-  .  I.Inhabited Rational ('Just '( 'True, l)) ('Just '( 'True, r))
+  .  I.Interval Rational ('Just '( 'True, l)) ('Just '( 'True, r))
   => TestTree
 tt'cc = testGroup ("Interval [" <> show l <> ", " <> show r <> "]")
   $ concat
@@ -222,7 +222,7 @@ tt'cc = testGroup ("Interval [" <> show l <> ", " <> show r <> "]")
 
 tt'co
   :: forall (l :: KR.Rational) (r :: KR.Rational)
-  .  I.Inhabited Rational ('Just '( 'True, l)) ('Just '( 'False, r))
+  .  I.Interval Rational ('Just '( 'True, l)) ('Just '( 'False, r))
   => TestTree
 tt'co = testGroup ("Interval [" <> show l <> ", " <> show r' <> ")")
   $ concat
@@ -327,7 +327,7 @@ tt'co = testGroup ("Interval [" <> show l <> ", " <> show r' <> ")")
 
 tt'cu
   :: forall (l :: KR.Rational)
-  .  I.Inhabited Rational ('Just '( 'True, l)) 'Nothing
+  .  I.Interval Rational ('Just '( 'True, l)) 'Nothing
   => TestTree
 tt'cu = testGroup ("Interval [" <> show l <> ", infinity)")
   $ concat
@@ -430,7 +430,7 @@ tt'cu = testGroup ("Interval [" <> show l <> ", infinity)")
 
 tt'oc
   :: forall (l :: KR.Rational) (r :: KR.Rational)
-  .  I.Inhabited Rational ('Just '( 'False, l)) ('Just '( 'True, r))
+  .  I.Interval Rational ('Just '( 'False, l)) ('Just '( 'True, r))
   => TestTree
 tt'oc = testGroup ("Interval (" <> show l' <> ", " <> show r <> "]")
   $ concat
@@ -535,7 +535,7 @@ tt'oc = testGroup ("Interval (" <> show l' <> ", " <> show r <> "]")
 
 tt'oo
   :: forall (l :: KR.Rational) (r :: KR.Rational)
-  .  I.Inhabited Rational ('Just '( 'False, l)) ('Just '( 'False, r))
+  .  I.Interval Rational ('Just '( 'False, l)) ('Just '( 'False, r))
   => TestTree
 tt'oo = testGroup ("Interval (" <> show l' <> ", " <> show r' <> ")")
   $ concat
@@ -646,7 +646,7 @@ tt'oo = testGroup ("Interval (" <> show l' <> ", " <> show r' <> ")")
 
 tt'ou
   :: forall (l :: KR.Rational)
-  .  I.Inhabited Rational ('Just '( 'False, l)) 'Nothing
+  .  I.Interval Rational ('Just '( 'False, l)) 'Nothing
   => TestTree
 tt'ou = testGroup ("Interval (" <> show l' <> ", infinity)")
   $ concat
@@ -743,7 +743,7 @@ tt'ou = testGroup ("Interval (" <> show l' <> ", infinity)")
 
 tt'uc
   :: forall (r :: KR.Rational)
-  .  I.Inhabited Rational 'Nothing ('Just '( 'True, r))
+  .  I.Interval Rational 'Nothing ('Just '( 'True, r))
   => TestTree
 tt'uc = testGroup ("Interval (-infinity, " <> show r <> "]")
   $ concat
@@ -839,7 +839,7 @@ tt'uc = testGroup ("Interval (-infinity, " <> show r <> "]")
 
 tt'uo
   :: forall (r :: KR.Rational)
-  .  I.Inhabited Rational 'Nothing ('Just '( 'False, r))
+  .  I.Interval Rational 'Nothing ('Just '( 'False, r))
   => TestTree
 tt'uo = testGroup ("Interval (-infinity, " <> show r' <> ")")
   $ concat

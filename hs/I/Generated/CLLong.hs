@@ -45,24 +45,17 @@ instance forall (l :: K.Integer) (r :: K.Integer).
     , r <= MaxT CLLong )
   type MinI CLLong l r = l
   type MaxI CLLong l r = r
-
-instance
-  ( Interval CLLong l r, InhabitedCtx CLLong l r
-  ) => Inhabited CLLong l r where
   inhabitant = min
-  from = \x -> UnsafeI x <$ guard (l <= x && x <= r)
+  from = \x -> unsafest x <$ guard (l <= x && x <= r)
     where l = fromInteger (K.integerVal (Proxy @l)) :: CLLong
           r = fromInteger (K.integerVal (Proxy @r)) :: CLLong
-
   negate' (unwrap -> x) = do
     guard (x /= minBound)
     from (P.negate x)
-
   (unwrap -> a) `plus'` (unwrap -> b)
     | b > 0 && a > maxBound - b = Nothing
     | b < 0 && a < minBound - b = Nothing
     | otherwise                 = from (a + b)
-
   (unwrap -> a) `mult'` (unwrap -> b) = do
     guard $ case a <= 0 of
       True  | b <= 0    -> a == 0 || b >= (maxBound `quot` a)
@@ -70,30 +63,28 @@ instance
       False | b <= 0    -> b >= (minBound `quot` a)
             | otherwise -> a <= (maxBound `quot` b)
     from (a * b)
-
   (unwrap -> a) `minus'` (unwrap -> b)
     | b > 0 && a < minBound + b = Nothing
     | b < 0 && a > maxBound + b = Nothing
     | otherwise                 = from (a - b)
-
   (unwrap -> a) `div'` (unwrap -> b) = do
     guard (b /= 0 && (b /= -1 || a /= minBound))
     let (q, m) = divMod a b
     guard (m == 0)
     from q
 
-instance (Inhabited CLLong l r) => Clamp CLLong l r
+instance (Interval CLLong l r) => Clamp CLLong l r
 
-instance (Inhabited CLLong ld rd, Inhabited CLLong lu ru, lu <= ld, rd <= ru)
+instance (Interval CLLong ld rd, Interval CLLong lu ru, lu <= ld, rd <= ru)
   => Up CLLong ld rd lu ru
 
 instance forall l r t.
-  ( Inhabited CLLong l r, KnownCtx CLLong l r t
+  ( Interval CLLong l r, KnownCtx CLLong l r t
   ) => Known CLLong l r t where
   type KnownCtx CLLong l r t = (K.KnownInteger t, l <= t, t <= r)
-  known' = UnsafeI . fromInteger . K.integerVal
+  known' = unsafe . fromInteger . K.integerVal
 
-instance forall l r. (Inhabited CLLong l r) => With CLLong l r where
+instance forall l r. (Interval CLLong l r) => With CLLong l r where
   with x g = case K.someIntegerVal (toInteger (unwrap x)) of
     K.SomeInteger (pt :: Proxy t) ->
       fromMaybe (error "I.with: impossible") $ do
@@ -101,20 +92,20 @@ instance forall l r. (Inhabited CLLong l r) => With CLLong l r where
         Dict <- leInteger @t @r
         pure (g pt)
 
-instance (Inhabited CLLong l r, l /= r) => Discrete CLLong l r where
-  pred' i = UnsafeI (unwrap i - 1) <$ guard (min < i)
-  succ' i = UnsafeI (unwrap i + 1) <$ guard (i < max)
+instance (Interval CLLong l r, l /= r) => Discrete CLLong l r where
+  pred' i = unsafe (unwrap i - 1) <$ guard (min < i)
+  succ' i = unsafe (unwrap i + 1) <$ guard (i < max)
 
 instance (Zero CLLong l r, l == K.Negate r) => Negate CLLong l r where
-  negate = UnsafeI . P.negate . unwrap
+  negate = unsafe . P.negate . unwrap
 
-instance (Inhabited CLLong l r, l <= K.P 0, K.P 0 <= r) => Zero CLLong l r where
-  zero = UnsafeI 0
+instance (Interval CLLong l r, l <= K.P 0, K.P 0 <= r) => Zero CLLong l r where
+  zero = unsafe 0
 
-instance (Inhabited CLLong l r, l <= K.P 1, K.P 1 <= r) => One CLLong l r where
-  one = UnsafeI 1
+instance (Interval CLLong l r, l <= K.P 1, K.P 1 <= r) => One CLLong l r where
+  one = unsafe 1
 
-instance forall l r. (Inhabited CLLong l r) => Shove CLLong l r where
+instance forall l r. (Interval CLLong l r) => Shove CLLong l r where
   shove = \x -> fromMaybe (error "shove(CLLong): impossible") $
                   from $ fromInteger (mod (toInteger x) (r - l + 1) + l)
     where l = toInteger (unwrap (min @CLLong @l @r))
