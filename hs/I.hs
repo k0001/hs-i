@@ -1,14 +1,26 @@
 {-# LANGUAGE NoImplicitPrelude #-}
 {-# LANGUAGE UndecidableInstances #-}
 
--- | This module is designed to be imported as follows:
+-- | "I" am a Haskell module designed to be imported as follows:
 --
 -- @
 -- import "I" ('I')
 -- import "I" qualified
 -- @
+--
+-- 'I' exist so that you don't have to manually check that a value is within
+-- an interval. For example:
+--
+-- [@'I' 'Prelude.Int' ('KindInteger.N' 5) ('KindInteger.P' 5)@]
+-- An 'Prelude.Int' known to be in the interval /[-5, +5]/.
+--
+-- [@'I' 'Numeric.Natural.Natural' 100 ''Prelude.Nothing'@]
+-- A 'Numeric.Natural.Natural' known to be in the interval /[100, +infinity)/.
+--
+-- [@'I' 'Prelude.Rational' (''Prelude.Just' '( ''Prelude.False', 0 'KindRational./' 1)) (''Prelude.Just' '( ''Prelude.True', 1 'KindRational./' 2))@]
+-- A 'Prelude.Rational' known to be in the interval /(0, +0.5]/.
 module I
- ( -- * I
+ ( -- * Interval
    I
  , T
  , MinT
@@ -22,8 +34,7 @@ module I
  , wrap
  , unsafe
  , Clamp(..)
- , Up
- , up
+ , Up(..)
  , down
  , Discrete(..)
  , Succ(..)
@@ -42,9 +53,9 @@ module I
  , min
  , max
  , single
-   -- * Testing support
+   -- * Testing
  , Shove(..)
-   -- * Danger zone
+   -- * Danger
  , unsafest
  ) where
 

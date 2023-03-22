@@ -84,12 +84,13 @@ type family MaxR (x :: Type) :: R x
 
 
 -- | For @'I' x l r@ to be a valid interval type, @'Interval' x l r@ needs
--- to be satisfied. All @'Interval's are non-empty.
+-- to be satisfied. All 'Interval's are non-empty.
 --
 -- __NB__: When defining 'Interval' instances, instead of mentioning any
 -- necessary constraints in the instance context, mention them them in
 -- 'IntervalCtx'. By doing so, when an instance of @'Interval' x l r@ is
--- satisfied, @'IntervalCtx' x l r@ is satisfied as well.
+-- satisfied, @'IntervalCtx' x l r@ is satisfied as well. If you don't do
+-- this, 'with' won't behave as you would expect.
 class IntervalCtx x l r => Interval (x :: Type) (l :: L x) (r :: R x) where
   -- | Constraints to be satisfied for @'I' x l r@ to be a valid non-empty
   -- interval type.
@@ -115,7 +116,9 @@ class IntervalCtx x l r => Interval (x :: Type) (l :: L x) (r :: R x) where
   -- | Proof that there is at least one element in the @'I' x l r@ interval.
   --
   -- No guarantees are made about the value of 'inhabitant' other than the
-  -- fact that it is known to inhabit the interval.
+  -- fact that it is known to inhabit the interval. The only exception to this
+  -- are intervals that contain a single inhabitant, in which case
+  -- 'inhabitant' will produce it. See 'single'.
   inhabitant :: I x l r
 
   -- | Wrap the @x@ value in the interval @'I' x l r@, if it fits.
@@ -125,30 +128,32 @@ class IntervalCtx x l r => Interval (x :: Type) (l :: L x) (r :: R x) where
   -- * Consider using 'known' if you have type-level knowledge
   -- about the value of @x@.
   --
+  -- * Consider using 'unsafe' if you know that the @x@ is within the interval.
+  --
   -- [Identity law]
   --
-  -- @
-  -- forall (x :: 'Type').
-  --   /such that/ 'isJust' ('from' x).
-  --     'fmap' 'unwrap' ('from' x)  ==  'Just' x
-  -- @
+  --     @
+  --     forall (x :: 'Type').
+  --       /such that/ 'isJust' ('from' x).
+  --         'fmap' 'unwrap' ('from' x)  ==  'Just' x
+  --     @
   from :: x -> Maybe (I x l r)
 
-  -- | @a '`plus'`' b@ adds @a@ and @b@.
+  -- | @'plus'' a b@ adds @a@ and @b@.
   --
-  -- 'Nothing' if the result would be out of the interval. See 'wrap', too.
+  -- 'Nothing' if the result would be out of the interval. See 'plus', too.
   plus' :: I x l r -> I x l r -> Maybe (I x l r)
   plus' _ _ = Nothing
 
-  -- | @a '`mult'`' b@ multiplies @a@ times @b@.
+  -- | @'mult'' a b@ multiplies @a@ times @b@.
   --
-  -- 'Nothing' if the result would be out of the interval. See 'plus', too.
+  -- 'Nothing' if the result would be out of the interval. See 'mult', too.
   mult' :: I x l r -> I x l r -> Maybe (I x l r)
   mult' _ _ = Nothing
 
-  -- | @a '`minus'`' b@ substracts @b@ from @a@.
+  -- | @'minus'' a b@ substracts @b@ from @a@.
   --
-  -- 'Nothing' if the result would be out of the interval. See 'mult', too.
+  -- 'Nothing' if the result would be out of the interval. See 'minus', too.
   minus' :: I x l r -> I x l r -> Maybe (I x l r)
   minus' a b = plus' a =<< negate' b
   {-# INLINE minus' #-}
@@ -165,7 +170,7 @@ class IntervalCtx x l r => Interval (x :: Type) (l :: L x) (r :: R x) where
   recip' :: I x l r -> Maybe (I x l r)
   recip' _ = Nothing
 
-  -- | @a '`div'`' b@ divides @a@ by @b@.
+  -- | @'div'' a b@ divides @a@ by @b@.
   --
   -- 'Nothing' if the result would be out of the interval. See 'div' too.
   div' :: I x l r -> I x l r -> Maybe (I x l r)
@@ -188,12 +193,13 @@ unsafe = fromMaybe (error "I.unsafe: input outside interval") . from
 -- __WARNING__: This function is fast because it doesn't do any work, but also
 -- it is very dangerous because it ignores all the safety supposedly given by
 -- the @'I' x l r@ type.  Don't use this unless you have proved by other means
--- that the @x@ is within the @'I' x l r@ interval. Otherwise, please use
--- 'from', or even 'unsafe'.
+-- that the @x@ is within the @'I' x l r@ interval.
+-- Please use 'from' instead, or even 'unsafe'.
 unsafest :: forall x l r. x -> I x l r
 unsafest = coerce
 {-# INLINE unsafest #-}
 
+-- | 'Interval's that support clamping.
 class (Interval x l r) => Clamp (x :: Type) (l :: L x) (r :: R x) where
   -- | Wrap @x@ in @'I' x l r@, making sure that @x@ is within the interval
   -- ends by clamping it to @'MinI' x l r@ if less than @l@, or to
@@ -221,19 +227,38 @@ down :: forall x lu ru ld rd
 down = from . unwrap
 {-# INLINE down #-}
 
-class (Interval x ld rd, Interval x lu ru)
-  => Up (x :: Type) (ld :: L x) (rd :: R x) (lu :: L x) (ru :: R x)
+-- | 'Interval's that can be upcasted to a larger 'Interval' type.
+class
+  ( Interval x           ld          rd
+  , Interval x                                   lu          ru
+  ) => Up   (x :: Type) (ld :: L x) (rd :: R x) (lu :: L x) (ru :: R x)
+  where
+  -- | Proof that @'I' x ld rd@ can be upcasted into @'I' x lu ru@.
+  --
+  -- [Identity law]
+  --
+  --     @
+  --     forall (a :: 'I' x ld rd).
+  --       ('Up' x ld rd lu ru) =>
+  --         'unwrap' a == 'unwrap' ('up' a :: 'I' x lu ru)
+  --     @
+  up :: I x ld rd -> I x lu ru
+  -- For safety reasons, the default implementation is @'unsafe' . 'unwrap'@,
+  -- which means upcasting is not free, as it involves a runtime check and a
+  -- posibility of 'error'. Consider giving an implementation using 'unsafest'.
+  default up :: HasCallStack => I x ld rd -> I x lu ru
+  up = unsafe . unwrap
+  {-# INLINE up #-}
 
--- -- | Identity.
--- instance {-# INCOHERENT #-} (Interval x l r, Interval x l r)
---   => Up x l r l r
+-- | Identity. This instance is /INCOHERENT/, but that's OK because all
+-- implementations of 'up' should give the same result, and this instance
+-- is as fast as possible. So, it doesn't matter whether this instance
+-- or another one is picked.
+instance {-# INCOHERENT #-} (Interval x l r) => Up x l r l r where
+  up = unsafest . unwrap
+  {-# INLINE up #-}
 
--- | Upcast @'I' x ld rd@ into @'I' x lu ru@.
-up :: forall x ld rd lu ru. Up x ld rd lu ru => I x ld rd -> I x lu ru
-up = unsafe . unwrap
-{-# INLINE up #-}
-
--- | Intervals that contain /discrete/ elements.
+-- | 'Interval's that contain /discrete/ elements.
 class (Interval x l r) => Discrete (x :: Type) (l :: L x) (r :: R x) where
   -- | __Pred__ecessor. That is, the previous /discrete/ value in the interval.
   --
@@ -244,59 +269,120 @@ class (Interval x l r) => Discrete (x :: Type) (l :: L x) (r :: R x) where
   -- 'Nothing' if the result would be out of the interval. See 'succ' too.
   succ' :: I x l r -> Maybe (I x l r)
 
--- | Intervals supporting /zero/.
+-- | 'Interval's known to be inhabited by the number /zero/.
 class (Interval x l r) => Zero (x :: Type) (l :: L x) (r :: R x) where
   -- | Zero.
   zero :: I x l r
 
--- | Intervals supporting /one/.
+-- | 'Interval's known to be inhabited by the number /one/.
 class (Interval x l r) => One (x :: Type) (l :: L x) (r :: R x) where
   -- | One.
   one :: I x l r
 
--- | Intervals /fully/ supporting /addition/.
+-- | 'Interval's where /addition/ is known to be a closed operation.
 class (Interval x l r) => Plus (x :: Type) (l :: L x) (r :: R x) where
-  -- | @a '`plus`' b@ adds @a@ and @b@.
+  -- | @'plus' a b@ adds @a@ and @b@.
+  --
+  -- [Correspondence with 'plus'']
+  --
+  --     @
+  --     forall (a :: 'I' x l r) (b :: 'I' x l r).
+  --       ('Plus' x l r) =>
+  --         'plus'' a b  ==  'Just' ('plus' a b)
+  --     @
   plus :: I x l r -> I x l r -> I x l r
 
--- | Intervals /fully/ supporting /multiplication/.
+-- | 'Interval's where /multiplication/ is known to be a closed operation.
 class (Interval x l r) => Mult (x :: Type) (l :: L x) (r :: R x) where
-  -- | @a '`plus`' b@ multiplies @a@ times @b@.
+  -- | @'mult' a b@ multiplies @a@ times @b@.
+  --
+  -- [Correspondence with 'mult'']
+  --
+  --     @
+  --     forall (a :: 'I' x l r) (b :: 'I' x l r).
+  --       ('Mult' x l r) =>
+  --         'mult'' a b  ==  'Just' ('mult' a b)
+  --     @
   mult :: I x l r -> I x l r -> I x l r
 
--- | Intervals /fully/ supporting /subtraction/.
+-- | 'Interval's where /subtraction/ is known to be a closed operation.
 class (Zero x l r) => Minus (x :: Type) (l :: L x) (r :: R x) where
-  -- | @a '`minus`' b@ substracts @b@ from @a@
+  -- | @'minus' a b@ substracts @b@ from @a@
+  --
+  -- [Correspondence with 'minus'']
+  --
+  --     @
+  --     forall (a :: 'I' x l r) (b :: 'I' x l r).
+  --       ('Minus' x l r) =>
+  --         'minus'' a b  ==  'Just' ('minus' a b)
+  --     @
   minus :: I x l r -> I x l r -> I x l r
 
--- | Intervals /fully/ supporting /additive inverse/.
+-- | 'Interval's where /negation/ is known to be a closed operation.
 class (Zero x l r) => Negate (x :: Type) (l :: L x) (r :: R x) where
   -- | Additive inverse, if it fits in the interval.
   --
-  -- @
-  -- forall (a :: 'I' x l r).
-  --   /such that there is a/ 'Negate' x l r /instance/.
-  --     'Just' ('negate' a)  = 'negate'' a
-  -- @
+  -- [Identity law]
+  --
+  --     @
+  --     forall (a :: 'I' x l r).
+  --       ('Negate' x l r) =>
+  --         a == 'negate' ('negate' a)
+  --     @
+  --
+  -- [Correspondence with 'negate'']
+  --
+  --     @
+  --     forall (a :: 'I' x l r) (b :: 'I' x l r).
+  --       ('Minus' x l r) =>
+  --         'negate'' a b  ==  'Just' ('negate' a b)
+  --     @
   negate :: I x l r -> I x l r
 
--- | Intervals /fully/ supporting /predecessor/.
+-- | 'Discrete' 'Interval's where obtaining the /predecessor/ is knonwn
+-- to be a closed operation.
 class (Discrete x l r) => Pred (x :: Type) (l :: L x) (r :: R x) where
-  -- | __Pred__ecessor. That is, the previous /discrete/ value in the interval.
+  -- | @'pred' a@ is the previous discrete value in the interval,
+  -- the /predecessor/.
+  --
+  -- [Correspondence with 'pred'']
+  --
+  --     @
+  --     forall (a :: 'I' x l r).
+  --       ('Pred' x l r) =>
+  --         'pred'' a  ==  'Just' ('pred' a)
+  --     @
   pred :: I x l r -> I x l r
 
--- | Intervals /fully/ supporting /successor/.
+-- | 'Discrete' 'Interval's where obtaining the /successor/ is knonwn
+-- to be a closed operation.
 class (Discrete x l r) => Succ (x :: Type) (l :: L x) (r :: R x) where
-  -- | __Succ__essor. That is, the next /discrete/ value in the interval.
+  -- | @'succ' a@ is the next discrete value in the interval, the /successor/.
+  --
+  -- [Correspondence with 'succ'']
+  --
+  --     @
+  --     forall (a :: 'I' x l r).
+  --       ('Succ' x l r) =>
+  --         'succ'' a  ==  'Just' ('succ' a)
+  --     @
   succ :: I x l r -> I x l r
 
--- | Intervals /fully/ supporting /division/.
+-- | 'Interval's where /division/ is known to be a closed operation.
 class (Interval x l r) => Div (x :: Type) (l :: L x) (r :: R x) where
-  -- | @a '`div`' b@ divides @a@ by @b@.
+  -- | @'div' a b@ divides @a@ by @b@.
+  --
+  -- [Correspondence with 'div'']
+  --
+  --     @
+  --     forall (a :: 'I' x l r) (b :: 'I' x l r).
+  --       ('Div' x l r) =>
+  --         'div'' a b  ==  'Just' ('div' a b)
+  --     @
   div :: I x l r -> I x l r -> I x l r
 
 
--- | Obtain the single element in the @'I' x l r@ interval.
+-- | If an 'Interval' contains a /single/ 'inhabitant', obtain it.
 single
   :: forall x l r
   .  ( MinI x l r ~ MaxI x l r
@@ -310,7 +396,8 @@ single = inhabitant
 -- __NB__: When defining 'Known' instances, instead of mentioning any
 -- necessary constraints in the instance context, mention them them in
 -- 'KnownCtx'. By doing so, when an instance of @'Known' x l r@ is
--- satisfied, @'KnownCtx' x l r@ is satisfied as well.
+-- satisfied, @'KnownCtx' x l r@ is satisfied as well.  If you don't do
+-- this, 'with' won't behave as you would expect.
 class
   ( Interval x l r, KnownCtx x l r t
   ) => Known (x :: Type) (l :: L x) (r :: R x) (t :: T x) where
@@ -366,13 +453,8 @@ class (Interval x l r) => With (x :: Type) (l :: L x) (r :: R x) where
 
 -- | Wrap the given @x@ in the interval @'I' x ('MinL' x) ('MaxR' x)@.
 --
--- This function always succeeds because such interval known to fit all the
+-- This function always succeeds because the interval known to fit all the
 -- values of type @x@.
---
--- * Consider using 'from' if the interval is not as big a @x@.
---
--- * Consider using 'known' if you have type-level knowledge
--- about the value of @x@.
 --
 -- [Identity law]
 --
@@ -380,6 +462,16 @@ class (Interval x l r) => With (x :: Type) (l :: L x) (r :: R x) where
 --     'wrap' . 'unwrap' == 'id'
 --     'unwrap' . 'wrap' == 'id'
 --     @
+--
+-- If the interval is not as big as @x@:
+--
+--     * Consider using 'from'.
+--
+--     * Consider using 'known' if you have type-level knowledge
+--     about the value of @x@.
+--
+--     * Consider using 'unsafe' if you know that the @x@ is within
+--     the interval.
 wrap :: Interval x (MinL x) (MaxR x) => x -> I x (MinL x) (MaxR x)
 wrap = coerce
 {-# INLINE wrap #-}
@@ -392,10 +484,6 @@ wrap = coerce
 --     'wrap' . 'unwrap' == 'id'
 --     'unwrap' . 'wrap' == 'id'
 --     @
---
--- It is implied that the interval is 'Interval', but there's no need
--- to mention the constraint here since otherwise it wouldn't have been
--- possible to obtain the input @'I' x l r@.
 unwrap :: forall x l r. I x l r -> x
 unwrap = coerce
 {-# INLINE unwrap #-}
@@ -424,13 +512,16 @@ instance
 -- Note: This class is for testing purposes only. For example, if you want to
 -- generate random values of type @'I' x l r@ for testing purposes, all you
 -- have to do is generate random values of type @x@ and then 'shove' them into
--- @'I' x l r@. If there was a good way to export generators for Hedgehog or
--- QuickCheck without depending on them, we'd probably export that instead.
+-- @'I' x l r@.
+--
+-- Note: We don't like this too much. If there was a good way to export
+-- generators for Hedgehog or QuickCheck without depending on these libraries,
+-- we'd probably export that instead.
 class Interval x l r => Shove (x :: Type) (l :: L x) (r :: R x) where
   -- | No guarantees are made about the @x@ value that ends up in @'I' x l r@.
   -- In particular, you can't expect @'id' == 'unwrap' . 'shove'@, not even
   -- for @x@ values for which @'from' == 'Just'@. All 'shove' guarantees is
-  -- a distribution more or less uniform.
+  -- a more or less uniform distribution.
   shove :: x -> I x l r
 
 --------------------------------------------------------------------------------
