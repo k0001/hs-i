@@ -161,6 +161,16 @@ tt'lr = testGroup ("Interval [" <> show l <> ", " <> show r <> "]")
         Nothing -> Nothing === I.from @Integer @('Just l) @('Just r)
                                       (negate (toInteger (I.unwrap x)))
 
+  , withDict (negateInteger @r) $
+      case (leInteger @l @(P 0), leInteger @(P 0) @r) of
+        (Just Dict, Just Dict) ->
+          case KI.cmpInteger (Proxy @l) (Proxy @(KI.Negate r)) of
+            EQI -> pure $ testProperty "negate" $ property $ do
+              x <- forAll $ genIInteger @('Just l) @('Just r)
+              Just (I.negate x) === I.negate' x
+            _ -> mzero
+        _ -> mzero
+
   , pure $ testProperty "down" $ property $ do
       x <- forAll $ genIInteger @('Just l) @('Just r)
       Just x === I.down x
@@ -528,6 +538,14 @@ tt'uu = testGroup "Interval (-infinity, +infinity)"
 
   , pure $ testCase "one" $ do
       1 @=? I.unwrap (I.one @Integer @'Nothing @'Nothing)
+
+  , pure $ testProperty "negate'" $ property $ do
+      x <- forAll $ genIInteger @'Nothing @'Nothing
+      fmap I.unwrap (I.negate' x)  ===  Just (negate (I.unwrap x))
+
+  , pure $ testProperty "negate" $ property $ do
+      x <- forAll $ genIInteger @'Nothing @'Nothing
+      Just (I.negate x) === I.negate' x
 
   , pure $ testProperty "down" $ property $ do
       x <- forAll $ genIInteger @'Nothing @'Nothing

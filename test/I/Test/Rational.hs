@@ -625,6 +625,17 @@ tt'oo = testGroup ("Interval (" <> show l' <> ", " <> show r' <> ")")
                                       @('Just '( 'False, r))
                                       (negate (I.unwrap x))
 
+  , withDict (negateRational @r) $
+    case (ltRational @l @(0/1), ltRational @(0/1) @r) of
+      (Just Dict, Just Dict) ->
+        case KR.cmpRational (Proxy @l) (Proxy @(KR.Negate r)) of
+          EQI -> pure $ testProperty "negate" $ property $ do
+            x <- forAll $ genIRational @('Just '( 'False, l))
+                                       @('Just '( 'False, r))
+            Just (I.negate x) === I.negate' x
+          _ -> mzero
+      _ -> mzero
+
   , pure $ testProperty "down" $ property $ do
       x <- forAll $ genIRational @('Just '( 'False, l)) @('Just '( 'False, r))
       Just x === I.down x
@@ -998,6 +1009,14 @@ tt'uu = testGroup "Interval (-infinity, +infinity)"
 
   , pure $ testCase "one" $ do
       1 @=? I.unwrap (I.one @Rational @'Nothing @'Nothing)
+
+  , pure $ testProperty "negate'" $ property $ do
+      x <- forAll $ genIRational @'Nothing @'Nothing
+      fmap I.unwrap (I.negate' x)  ===  Just (negate (I.unwrap x))
+
+  , pure $ testProperty "negate" $ property $ do
+      x <- forAll $ genIRational @'Nothing @'Nothing
+      Just (I.negate x) === I.negate' x
 
   , pure $ testProperty "down" $ property $ do
       x <- forAll $ genIRational @'Nothing @'Nothing

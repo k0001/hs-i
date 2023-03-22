@@ -20,6 +20,7 @@ module I.Test.Support
   , ltRational
 
   , negateInteger
+  , negateRational
   ) where
 
 import Data.Constraint
@@ -139,4 +140,25 @@ negateInteger
   :: forall (a :: KI.Integer)
   .  (KI.KnownInteger a) :- (KI.KnownInteger (KI.Negate a))
 negateInteger = integerMagic1 negate
+
+
+--------------------------------------------------------------------------------
+-- TODO: Move this stuff to KindRational (ideas from Data.Constraint.Nat)
+
+newtype RationalMagic n =
+  RationalMagic (KR.KnownRational n => Dict (KR.KnownRational n))
+
+-- WARNING: Causes SIGSEGV on GHCi 9.4.3. See GHC issue #19667. The workaround
+-- is to run tests with `cabal test` instead.
+rationalMagic1
+  :: forall a b
+  .  (Rational -> Rational)  -- ^ a -> b
+  -> (KR.KnownRational a :- KR.KnownRational b)
+rationalMagic1 f = Sub $ unsafeCoerce (RationalMagic Dict)
+                       $ f (KR.rationalVal (Proxy @a))
+
+negateRational
+  :: forall (a :: KR.Rational)
+  .  (KR.KnownRational a) :- (KR.KnownRational (KR.Negate a))
+negateRational = rationalMagic1 negate
 
