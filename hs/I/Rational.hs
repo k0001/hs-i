@@ -1,7 +1,7 @@
 {-# LANGUAGE AllowAmbiguousTypes #-}
 {-# LANGUAGE UndecidableInstances #-}
 
-{-# OPTIONS_GHC -Wno-orphans -Wno-unused-imports #-}
+{-# OPTIONS_GHC -Wno-orphans #-}
 {-# OPTIONS_HADDOCK not-home #-}
 
 module I.Rational () where
@@ -11,7 +11,6 @@ import Data.Constraint
 import Data.Maybe
 import Data.Proxy
 import Data.Type.Ord
-import Debug.Trace
 import GHC.TypeLits qualified as L
 import GHC.Real
 import KindRational (type (/))
