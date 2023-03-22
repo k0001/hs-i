@@ -1,6 +1,6 @@
 optimization: True
 documentation: True
-profiling: False
+profiling: True
 profiling-detail: all-functions
 tests: True
 packages: ./
