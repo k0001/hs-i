@@ -17,6 +17,6 @@ mkDerivation {
     tasty-hunit
   ];
   homepage = "https://github.com/k0001/hs-i";
-  description = "Haskell interval types";
+  description = "Haskell interval types. Bounds checking.";
   license = lib.licenses.asl20;
 }

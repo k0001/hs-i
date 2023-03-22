@@ -9,8 +9,8 @@ maintainer: renλren.zone
 copyright: Copyright (c) Renzo Carbonara 2023
 category: Numbers
 build-type: Custom
-synopsis: Haskell interval types.
-description: Haskell interval types.
+synopsis: Haskell interval types. Bounds checking.
+description: Haskell interval types. Bounds checking.
 homepage: https://github.com/k0001/hs-i
 bug-reports: https://github.com/k0001/hs-i/issues
 tested-with: GHC ==9.4.3
@@ -32,9 +32,9 @@ common basic
 
 custom-setup
   setup-depends:
-    base,
+    base ==4.*,
     directory,
-    Cabal,
+    Cabal ==3.*,
 
 library
   import: basic
