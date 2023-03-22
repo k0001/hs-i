@@ -129,9 +129,8 @@ tt'lr = testGroup ("Interval [" <> show l <> ", " <> show r <> "]")
 
   , case L.cmpNat (Proxy @l) (Proxy @0) of
       EQI -> pure $ testCase "zero" $
-               0 @=? I.unwrap (I.zero @Natural @l @('Just r))
+        0 @=? I.unwrap (I.zero @Natural @l @('Just r))
       _ -> mzero
-
 
   , case (leNatural @l @1, leNatural @1 @r) of
       (Just Dict, Just Dict) -> pure $ testCase "one" $ do

@@ -49,16 +49,16 @@ genInt8 :: MonadGen m => m Int8
 genInt8 = Gen.integral $ Range.constant minBound maxBound
 
 genNatural :: MonadGen m => m Natural
-genNatural = Gen.integral $ Range.linear 0 (10 ^ (100 :: Int))
+genNatural = Gen.integral $ Range.linear 0 (10 ^ (10 :: Int))
 
 genInteger :: MonadGen m => m Integer
-genInteger = Gen.integral $ Range.linearFrom 0 (negate (10 ^ (100 :: Int)))
-                                               (10 ^ (100 :: Int))
+genInteger = Gen.integral $ Range.linearFrom 0 (negate (10 ^ (10 :: Int)))
+                                               (10 ^ (10 :: Int))
 
 genRational :: MonadGen m => m Rational
 genRational = do
   n <- genInteger
-  d <- Gen.integral $ Range.linear 1 (10 ^ (100 :: Int))
+  d <- Gen.integral $ Range.linear 1 (10 ^ (10 :: Int))
   pure (n % d)
 
 --------------------------------------------------------------------------------

@@ -1,4 +1,5 @@
 {-# LANGUAGE AllowAmbiguousTypes #-}
+{-# LANGUAGE OverloadedStrings #-}
 
 {-# OPTIONS_GHC -Wno-unused-top-binds -Wno-unused-imports #-}
 
@@ -112,7 +113,6 @@ tt'cc = testGroup ("Interval [" <> show l <> ", " <> show r <> "]")
                      I.unwrap y === x
 
   , pure $ testProperty "shove" $ property $ do
-          -- TODO test cover at end
       x <- forAll genRational
       let y = I.shove @Rational @('Just '( 'True, l)) @('Just '( 'True, r)) x
       I.from (I.unwrap y) === Just y
@@ -234,7 +234,6 @@ tt'co = testGroup ("Interval [" <> show l <> ", " <> show r' <> ")")
                      I.unwrap y === x
 
   , pure $ testProperty "shove" $ property $ do
-          -- TODO test cover at end
       x <- forAll genRational
       let y = I.shove @Rational @('Just '( 'True, l)) @('Just '( 'False, r)) x
       I.from (I.unwrap y) === Just y
@@ -340,7 +339,6 @@ tt'cu = testGroup ("Interval [" <> show l <> ", infinity)")
                      I.unwrap y === x
 
   , pure $ testProperty "shove" $ property $ do
-          -- TODO test cover at end
       x <- forAll genRational
       let y = I.shove @Rational @('Just '( 'True, l)) @'Nothing x
       I.from (I.unwrap y) === Just y
@@ -444,7 +442,6 @@ tt'oc = testGroup ("Interval (" <> show l' <> ", " <> show r <> "]")
                      I.unwrap y === x
 
   , pure $ testProperty "shove" $ property $ do
-          -- TODO test cover at end
       x <- forAll genRational
       let y = I.shove @Rational @('Just '( 'False, l)) @('Just '( 'True, r)) x
       I.from (I.unwrap y) === Just y
@@ -550,7 +547,6 @@ tt'oo = testGroup ("Interval (" <> show l' <> ", " <> show r' <> ")")
                      I.unwrap y === x
 
   , pure $ testProperty "shove" $ property $ do
-          -- TODO test cover at end
       x <- forAll genRational
       let y = I.shove @Rational @('Just '( 'False, l)) @('Just '( 'False, r)) x
       I.from (I.unwrap y) === Just y
@@ -662,7 +658,6 @@ tt'ou = testGroup ("Interval (" <> show l' <> ", infinity)")
                      I.unwrap y === x
 
   , pure $ testProperty "shove" $ property $ do
-          -- TODO test cover at end
       x <- forAll genRational
       let y = I.shove @Rational @('Just '( 'False, l)) @'Nothing x
       I.from (I.unwrap y) === Just y
@@ -856,7 +851,6 @@ tt'uo = testGroup ("Interval (-infinity, " <> show r' <> ")")
                      I.unwrap y === x
 
   , pure $ testProperty "shove" $ property $ do
-          -- TODO test cover at end
       x <- forAll genRational
       let y = I.shove @Rational @'Nothing @('Just '( 'False, r)) x
       I.from (I.unwrap y) === Just y

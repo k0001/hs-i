@@ -13,7 +13,7 @@ import Data.Proxy
 import Data.Type.Ord
 import Debug.Trace
 import GHC.TypeLits qualified as L
-import GHC.Real (Ratio((:%)))
+import GHC.Real
 import KindRational (type (/))
 import KindRational qualified as KR
 import Prelude hiding (min, max, div, succ, pred)
@@ -628,21 +628,27 @@ instance Negate P.Rational 'Nothing 'Nothing where
 instance Inhabited Rational ('Just '( 'True, l)) ('Just '( 'True, r))
   => Shove Rational ('Just '( 'True, l)) ('Just '( 'True, r)) where
   shove | d == 0    = \_ -> min
-        | otherwise = \x -> unsafe (r - f (abs (abs r - abs x)))
+        | otherwise = \x ->
+          let t = P.min (abs (numerator x)) (abs (denominator x))
+                % P.max (abs (numerator x)) (abs (denominator x))
+          in unsafe $ if x < 0 then r - d * t else l + d * t
     where
-      f a = if a <= d then a else f (a - d)
-      d = r - l
       l = KR.rationalVal (Proxy @l)
       r = KR.rationalVal (Proxy @r)
+      d = r - l
 
 instance Inhabited Rational ('Just '( 'True, l)) ('Just '( 'False, r))
   => Shove Rational ('Just '( 'True, l)) ('Just '( 'False, r)) where
-  shove = \x -> unsafe (l + f (abs (abs r - abs x)))
+  shove = \x -> let t = P.min (abs (numerator x)) (abs (denominator x))
+                      % P.max (abs (numerator x)) (abs (denominator x))
+                in unsafe $ if x < 0 then r1 - d1 * t else l0 + d1 * t
     where
-      f a = if a < d then a else f (a - d)
-      d = r - l
-      l = KR.rationalVal (Proxy @l)
-      r = KR.rationalVal (Proxy @r)
+      l0 = KR.rationalVal (Proxy @l)
+      r0 = KR.rationalVal (Proxy @r)
+      d0 = r0 - l0
+      p0 = d0 / 1000
+      r1 = r0 - p0
+      d1 = r1 - l0
 
 instance Inhabited Rational ('Just '( 'True, l)) 'Nothing
   => Shove Rational ('Just '( 'True, l)) 'Nothing where
@@ -651,18 +657,23 @@ instance Inhabited Rational ('Just '( 'True, l)) 'Nothing
 
 instance Inhabited Rational ('Just '( 'False, l)) ('Just '( 'True, r))
   => Shove Rational ('Just '( 'False, l)) ('Just '( 'True, r)) where
-  shove  = \x -> unsafe (r - f (abs (abs r - abs x)))
+  shove = \x -> let t = P.min (abs (numerator x)) (abs (denominator x))
+                      % P.max (abs (numerator x)) (abs (denominator x))
+                in unsafe $ if x < 0 then r0 - d1 * t else l1 + d1 * t
     where
-      f a = if a < d then a else f (a - d)
-      d = r - l
-      l = KR.rationalVal (Proxy @l)
-      r = KR.rationalVal (Proxy @r)
+      l0 = KR.rationalVal (Proxy @l)
+      r0 = KR.rationalVal (Proxy @r)
+      d0 = r0 - l0
+      p0 = d0 / 1000
+      l1 = l0 + p0
+      d1 = r0 - l1
 
 instance Inhabited Rational ('Just '( 'False, l)) ('Just '( 'False, r))
   => Shove Rational ('Just '( 'False, l)) ('Just '( 'False, r)) where
-  shove = \x ->  unsafe (r1 - f (abs (abs r1 - abs x)))
+  shove = \x -> let t = P.min (abs (numerator x)) (abs (denominator x))
+                      % P.max (abs (numerator x)) (abs (denominator x))
+                in unsafe $ if x <= 0 then r1 - d1 * t else l1 + d1 * t
     where
-      f a = if a <= d1 then a else f (a - d1)
       l0 = KR.rationalVal (Proxy @l)
       r0 = KR.rationalVal (Proxy @r)
       d0 = r0 - l0

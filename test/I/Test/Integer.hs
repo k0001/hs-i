@@ -143,9 +143,9 @@ tt'lr = testGroup ("Interval [" <> show l <> ", " <> show r <> "]")
         ]
       _ -> mzero
 
-  , case KI.cmpInteger (Proxy @l) (Proxy @(P 0)) of
-      EQI -> pure $ testCase "zero" $
-               0 @=? I.unwrap (I.zero @Integer @('Just l) @('Just r))
+  , case (leInteger @l @(P 0), leInteger @(P 0) @r) of
+      (Just Dict, Just Dict) -> pure $ testCase "zero" $ do
+        0 @=? I.unwrap (I.zero @Integer @('Just l) @('Just r))
       _ -> mzero
 
 
