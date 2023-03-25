@@ -11,22 +11,23 @@
 
   outputs = inputs@{ ... }:
     inputs.flake-parts.lib.mkFlake { inherit inputs; } {
-      imports = [ inputs.flake-parts.flakeModules.easyOverlay ];
-      systems = [ "x86_64-linux" "i686-linux" "aarch64-linux" ];
-      perSystem = { config, pkgs, final, system, ... }: {
-        _module.args.pkgs = import inputs.nixpkgs {
-          inherit system;
-          overlays = [ inputs.hs_kind.overlays.default ];
-        };
-        overlayAttrs = {
-          haskell = pkgs.haskell // {
-            packageOverrides = pkgs.lib.composeExtensions
-              (pkgs.haskell.packageOverrides or (_: _: { }))
+      flake.overlays.default =
+        inputs.nixpkgs.lib.composeExtensions inputs.hs_kind.overlays.default
+        (final: prev: {
+          haskell = prev.haskell // {
+            packageOverrides = prev.lib.composeExtensions
+              (prev.haskell.packageOverrides or (_: _: { }))
               (hself: hsuper: { i = hself.callPackage ./. { }; });
           };
+        });
+      systems = [ "x86_64-linux" "i686-linux" "aarch64-linux" ];
+      perSystem = { config, pkgs, system, ... }: {
+        _module.args.pkgs = import inputs.nixpkgs {
+          inherit system;
+          overlays = [ inputs.self.overlays.default ];
         };
         packages = {
-          i__ghc943 = final.pkgs.haskell.packages.ghc943.i;
+          i__ghc943 = pkgs.haskell.packages.ghc943.i;
           default = pkgs.releaseTools.aggregate {
             name = "every output from this flake";
             constituents = [
@@ -38,7 +39,7 @@
         };
         devShells = {
           default = config.devShells.ghc943;
-          ghc943 = final.pkgs.haskell.packages.ghc943.shellFor {
+          ghc943 = pkgs.haskell.packages.ghc943.shellFor {
             packages = p: [ p.i ];
             withHoogle = true;
             nativeBuildInputs = [ pkgs.cabal-install pkgs.cabal2nix ];
